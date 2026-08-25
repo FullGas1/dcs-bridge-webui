@@ -190,6 +190,15 @@ describe('Widget', () => {
     expect(container.querySelector('.cm-content')).toHaveTextContent('return checkMenu()');
   });
 
+  it('returns focus to the editor after loading a template', async () => {
+    const { getByText, container } = render(Widget, { props: baseProps() });
+
+    await fireEvent.click(getByText('Templates'));
+    await fireEvent.click(getByText('check menu'));
+
+    expect(document.activeElement).toBe(container.querySelector('.cm-content'));
+  });
+
   it('reports the loaded template as a code change (so it persists)', async () => {
     const onCodeChange = vi.fn();
     const { getByText } = render(Widget, { props: baseProps({ onCodeChange }) });

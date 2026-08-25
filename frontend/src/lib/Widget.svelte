@@ -64,6 +64,7 @@
     editor.setValue(template.code);
     code = template.code;
     onCodeChange?.(template.code);
+    editor.focus();
   }
 
   function send(): void {
@@ -163,11 +164,14 @@
     flex-direction: column;
     overflow: hidden;
     background: var(--bg);
-    min-height: 0;
+    /* A real height (not just min-height) so widget-editor's flex:1 actually caps the
+       CodeMirror area - otherwise it has no ceiling to distribute against and just grows to
+       fit the whole script instead of scrolling internally. ~30 lines by default. */
+    height: 640px;
   }
 
   .widget[data-expanded='true'] {
-    min-height: 60vh;
+    height: 85vh;
   }
 
   .widget-header {
