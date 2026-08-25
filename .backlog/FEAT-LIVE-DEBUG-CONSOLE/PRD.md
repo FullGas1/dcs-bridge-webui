@@ -12,7 +12,7 @@
 | `04-session-persistence-localstorage` | done | 04 — Session persistence via localStorage |
 | `05-script-templates` | done | 05 — Script templates |
 | `06-connection-banner` | done | 06 — Turnkey connection banner |
-| `07-branding-header` | open | 07 — Branding header |
+| `07-branding-header` | done | 07 — Branding header |
 | `08-single-exe-packaging` | open | 08 — Single-exe packaging |
 
 ## Problem Statement
