@@ -1,6 +1,6 @@
 # 02 — single-widget injection loop
 
-**Status:** open (ready-for-agent)
+**Status:** done
 
 ## What to build
 
