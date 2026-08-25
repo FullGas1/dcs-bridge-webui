@@ -6,7 +6,7 @@
 
 | Ticket | Status | Title |
 |---|---|---|
-| `01-backend-skeleton-config-store-proxy` | open | 01 — Backend skeleton, local config store, injection proxy |
+| `01-backend-skeleton-config-store-proxy` | done | 01 — Backend skeleton, local config store, injection proxy |
 | `02-single-widget-injection-loop` | open | 02 — Single-widget injection loop |
 | `03-multi-widget-grid-queue` | open | 03 — Multi-widget grid and injection queue |
 | `04-session-persistence-localstorage` | open | 04 — Session persistence via localStorage |
