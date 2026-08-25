@@ -1,5 +1,5 @@
 <script lang="ts">
-  import Widget from './lib/Widget.svelte';
+  import Grid from './lib/Grid.svelte';
 </script>
 
 <main>
@@ -7,7 +7,5 @@
     <h1>dcs-bridge-webui</h1>
   </header>
 
-  <div class="grid">
-    <Widget />
-  </div>
+  <Grid />
 </main>
