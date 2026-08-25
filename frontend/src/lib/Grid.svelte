@@ -1,16 +1,35 @@
 <script lang="ts">
   import Widget from './Widget.svelte';
   import { InjectionQueue } from './injectionQueue';
+  import { loadWidgets, saveWidgets } from './widgetSession';
+
+  interface WidgetRecord {
+    id: number;
+    code: string;
+    expanded: boolean;
+  }
 
   // One shared queue for every widget on the page (ticket 03): only one injection in flight
   // across the whole grid, regardless of which widget triggered it.
   const queue = new InjectionQueue();
 
-  let nextId = 1;
-  let widgets = $state<{ id: number; expanded: boolean }[]>([{ id: nextId++, expanded: false }]);
+  const stored = loadWidgets();
+  let nextId = stored && stored.length > 0 ? Math.max(...stored.map((w) => w.id)) + 1 : 1;
+
+  // null = genuinely nothing saved yet -> seed one empty widget (ticket 03's default).
+  // An empty array IS a legitimate prior state (every widget was closed) and is respected as-is.
+  let widgets = $state<WidgetRecord[]>(
+    stored === null
+      ? [{ id: nextId++, code: '', expanded: false }]
+      : stored.map((w) => ({ id: w.id, code: w.code, expanded: false })),
+  );
+
+  $effect(() => {
+    saveWidgets(widgets.map((w) => ({ id: w.id, code: w.code })));
+  });
 
   function addWidget(): void {
-    widgets.push({ id: nextId++, expanded: false });
+    widgets.push({ id: nextId++, code: '', expanded: false });
   }
 
   function closeWidget(id: number): void {
@@ -21,6 +40,11 @@
     const widget = widgets.find((w) => w.id === id);
     if (widget) widget.expanded = !widget.expanded;
   }
+
+  function updateCode(id: number, code: string): void {
+    const widget = widgets.find((w) => w.id === id);
+    if (widget) widget.code = code;
+  }
 </script>
 
 <div class="grid">
@@ -29,8 +53,10 @@
       number={w.id}
       {queue}
       expanded={w.expanded}
+      initialCode={w.code}
       onClose={() => closeWidget(w.id)}
       onToggleExpand={() => toggleExpand(w.id)}
+      onCodeChange={(code) => updateCode(w.id, code)}
     />
   {/each}
   <button type="button" class="add-widget" onclick={addWidget} aria-label="Add widget">+</button>

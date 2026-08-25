@@ -1,10 +1,15 @@
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render } from '@testing-library/svelte';
 import Grid from './Grid.svelte';
 import { injectScript, type InjectResult } from './api';
+import { loadWidgets, saveWidgets } from './widgetSession';
 
 vi.mock('./api', () => ({ injectScript: vi.fn() }));
 const injectScriptMock = vi.mocked(injectScript);
+
+beforeEach(() => {
+  localStorage.clear();
+});
 
 afterEach(() => {
   cleanup();
@@ -74,5 +79,52 @@ describe('Grid', () => {
     expect(getAllByText('first')[0]).toBeInTheDocument();
     expect(container.querySelectorAll('[data-activity="running"]')).toHaveLength(1);
     expect(container.querySelectorAll('[data-activity="queued"]')).toHaveLength(0);
+  });
+
+  it('restores widgets and their script text from a prior session, in the saved order', () => {
+    saveWidgets([
+      { id: 5, code: 'return "five"' },
+      { id: 2, code: 'return "two"' },
+      { id: 9, code: 'return "nine"' },
+    ]);
+
+    const { getAllByText, container } = render(Grid);
+
+    expect(getAllByText(/Widget \d/).map((el) => el.textContent)).toEqual([
+      'Widget 5', 'Widget 2', 'Widget 9',
+    ]);
+    // CodeMirror splits its content into per-token spans, so match on the editor's whole
+    // textContent rather than a single exact-text node.
+    const editors = container.querySelectorAll('.cm-content');
+    expect(editors[0]).toHaveTextContent('return "five"');
+    expect(editors[1]).toHaveTextContent('return "two"');
+    expect(editors[2]).toHaveTextContent('return "nine"');
+  });
+
+  it('does not resurrect a widget closed before the previous session ended', async () => {
+    saveWidgets([{ id: 1, code: 'a' }, { id: 2, code: 'b' }]);
+    const { unmount, getAllByLabelText } = render(Grid);
+    await fireEvent.click(getAllByLabelText('Close widget')[0]!); // closes widget 1
+    unmount(); // simulate leaving the page; the $effect has already persisted the close
+
+    const stored = loadWidgets();
+
+    expect(stored).toEqual([{ id: 2, code: 'b' }]);
+  });
+
+  it('falls back to one empty widget when nothing was ever saved', () => {
+    const { getAllByText } = render(Grid);
+
+    expect(getAllByText(/Widget \d/)).toHaveLength(1);
+    expect(loadWidgets()).toEqual([{ id: expect.any(Number), code: '' }]);
+  });
+
+  it('respects an explicitly empty saved session (every widget was closed) rather than reseeding one', () => {
+    saveWidgets([]);
+
+    const { queryAllByText, getByLabelText } = render(Grid);
+
+    expect(queryAllByText(/Widget \d/)).toHaveLength(0);
+    expect(getByLabelText('Add widget')).toBeInTheDocument();
   });
 });

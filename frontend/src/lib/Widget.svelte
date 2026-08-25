@@ -10,8 +10,11 @@
     onClose: () => void;
     onToggleExpand: () => void;
     initialCode?: string;
+    onCodeChange?: (code: string) => void;
   }
-  let { number, queue, expanded, onClose, onToggleExpand, initialCode = '' }: Props = $props();
+  let {
+    number, queue, expanded, onClose, onToggleExpand, initialCode = '', onCodeChange,
+  }: Props = $props();
 
   // Seeded once from the prop, then independently editable - not a live mirror of it.
   let code = $state(untrack(() => initialCode));
@@ -21,6 +24,7 @@
 
   function handleChange(value: string): void {
     code = value;
+    onCodeChange?.(value);
   }
 
   function send(): void {
