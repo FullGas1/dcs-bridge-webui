@@ -134,32 +134,49 @@ describe('Widget', () => {
     expect(handleCancelSpy).toHaveBeenCalledOnce();
   });
 
-  it('prompts for a name and calls onSaveTemplate with the current code when Memorize is clicked', async () => {
-    vi.spyOn(window, 'prompt').mockReturnValue('my template');
-    const onSaveTemplate = vi.fn();
-    const { getByText } = render(Widget, { props: baseProps({ onSaveTemplate }) });
+  it('opens an in-page naming dialog when Memorize is clicked (not window.prompt)', async () => {
+    const { getByText, getByLabelText } = render(Widget, { props: baseProps() });
 
     await fireEvent.click(getByText('Memorize'));
 
-    expect(onSaveTemplate).toHaveBeenCalledWith('my template', expect.any(String));
+    expect(getByLabelText('Name this template')).toBeInTheDocument();
   });
 
-  it('does not save when the naming prompt is cancelled', async () => {
-    vi.spyOn(window, 'prompt').mockReturnValue(null);
+  it('saves the current code under the typed name and closes the dialog', async () => {
     const onSaveTemplate = vi.fn();
-    const { getByText } = render(Widget, { props: baseProps({ onSaveTemplate }) });
+    const { getByText, getByLabelText, queryByLabelText } = render(Widget, {
+      props: baseProps({ onSaveTemplate }),
+    });
 
     await fireEvent.click(getByText('Memorize'));
+    await fireEvent.input(getByLabelText('Name this template'), { target: { value: 'my template' } });
+    await fireEvent.click(getByText('Save'));
+
+    expect(onSaveTemplate).toHaveBeenCalledWith('my template', expect.any(String));
+    expect(queryByLabelText('Name this template')).toBeNull();
+  });
+
+  it('does not save when the naming dialog is cancelled', async () => {
+    const onSaveTemplate = vi.fn();
+    const { getByText, getByLabelText, queryByLabelText } = render(Widget, {
+      props: baseProps({ onSaveTemplate }),
+    });
+
+    await fireEvent.click(getByText('Memorize'));
+    await fireEvent.input(getByLabelText('Name this template'), { target: { value: 'my template' } });
+    await fireEvent.click(getByText('Cancel'));
 
     expect(onSaveTemplate).not.toHaveBeenCalled();
+    expect(queryByLabelText('Name this template')).toBeNull();
   });
 
   it('does not save a blank template name', async () => {
-    vi.spyOn(window, 'prompt').mockReturnValue('   ');
     const onSaveTemplate = vi.fn();
-    const { getByText } = render(Widget, { props: baseProps({ onSaveTemplate }) });
+    const { getByText, getByLabelText } = render(Widget, { props: baseProps({ onSaveTemplate }) });
 
     await fireEvent.click(getByText('Memorize'));
+    await fireEvent.input(getByLabelText('Name this template'), { target: { value: '   ' } });
+    await fireEvent.click(getByText('Save'));
 
     expect(onSaveTemplate).not.toHaveBeenCalled();
   });

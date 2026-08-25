@@ -168,12 +168,13 @@ describe('Grid', () => {
   it('makes a template saved from one widget appear in every other widget immediately', async () => {
     listTemplatesMock.mockResolvedValue([]);
     saveTemplateMock.mockResolvedValue([{ id: '1', name: 'new one', code: 'x' }]);
-    vi.spyOn(window, 'prompt').mockReturnValue('new one');
-    const { getByLabelText, getAllByText } = render(Grid);
+    const { getByLabelText, getAllByText, getAllByLabelText } = render(Grid);
     await fireEvent.click(getByLabelText('Add widget'));
     await flush();
 
     await fireEvent.click(getAllByText('Memorize')[0]!);
+    await fireEvent.input(getAllByLabelText('Name this template')[0]!, { target: { value: 'new one' } });
+    await fireEvent.click(getAllByText('Save')[0]!);
     await flush();
 
     const dropdownButtons = getAllByText('Templates');

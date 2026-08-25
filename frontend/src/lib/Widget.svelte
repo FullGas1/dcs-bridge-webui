@@ -29,15 +29,35 @@
   let jobHandle: JobHandle | null = null;
   let editor: CodeMirrorEditor;
 
+  // In-page naming dialog for Memorize, rather than window.prompt(): the latter throws
+  // "prompt() is not supported" in some embedded/automated browser contexts (observed live).
+  let namingTemplate = $state(false);
+  let pendingTemplateName = $state('');
+  let nameInput: HTMLInputElement | undefined = $state();
+
+  $effect(() => {
+    if (namingTemplate) nameInput?.focus();
+  });
+
   function handleChange(value: string): void {
     code = value;
     onCodeChange?.(value);
   }
 
   function memorize(): void {
-    const name = window.prompt('Name this template:');
-    if (!name || !name.trim()) return;
-    onSaveTemplate(name.trim(), code);
+    pendingTemplateName = '';
+    namingTemplate = true;
+  }
+
+  function confirmMemorize(): void {
+    const name = pendingTemplateName.trim();
+    namingTemplate = false;
+    if (!name) return;
+    onSaveTemplate(name, code);
+  }
+
+  function cancelMemorize(): void {
+    namingTemplate = false;
   }
 
   function loadTemplate(template: Template): void {
@@ -103,6 +123,36 @@
       <div class="status-line" data-status="idle">idle</div>
     {/if}
   </div>
+
+  {#if namingTemplate}
+    <div
+      class="naming-backdrop"
+      role="presentation"
+      onclick={(e) => {
+        if (e.target === e.currentTarget) cancelMemorize();
+      }}
+    >
+      <form
+        class="naming-dialog"
+        onsubmit={(e) => {
+          e.preventDefault();
+          confirmMemorize();
+        }}
+      >
+        <label for={`template-name-${number}`}>Name this template</label>
+        <input
+          id={`template-name-${number}`}
+          type="text"
+          bind:value={pendingTemplateName}
+          bind:this={nameInput}
+        />
+        <div class="naming-actions">
+          <button type="button" onclick={cancelMemorize}>Cancel</button>
+          <button type="submit">Save</button>
+        </div>
+      </form>
+    </div>
+  {/if}
 </div>
 
 <style>
@@ -182,5 +232,41 @@
     margin: 4px 0 0;
     white-space: pre-wrap;
     word-break: break-word;
+  }
+
+  .naming-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+  }
+
+  .naming-dialog {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-width: 20em;
+  }
+
+  .naming-dialog input {
+    font: inherit;
+    padding: 6px 8px;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    background: var(--bg);
+    color: var(--text-h);
+  }
+
+  .naming-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
   }
 </style>
