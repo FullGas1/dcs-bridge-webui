@@ -171,7 +171,13 @@
   }
 
   .widget[data-expanded='true'] {
-    height: 85vh;
+    /* 85vh alone can be *shorter* than the 640px default on a short/unmaximized window,
+       making Expand shrink the widget instead of growing it (observed live) - and even at
+       "not shorter", a bare max(640px, 85vh) would often equal exactly 640px, i.e. no visible
+       change. 1400px is a floor well above the default regardless of viewport (the page
+       scrolls for the rest, as it already does for multiple widgets); 85vh still takes over
+       and grows further on a genuinely tall screen. */
+    height: max(1400px, 85vh);
   }
 
   .widget-header {
