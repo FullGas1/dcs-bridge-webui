@@ -1,4 +1,4 @@
-import { injectScript } from './api';
+import { injectScript, type InjectResult } from './api';
 
 export type Activity = 'idle' | 'queued' | 'running';
 export type RunStatus = 'success' | 'error' | 'timeout';
@@ -7,12 +7,16 @@ export interface LastRun {
   status: RunStatus;
   elapsedMs: number;
   body: string | null;
+  /** null for a locally-detected timeout (never got a backend response to classify). */
+  errorType: InjectResult['error_type'] | null;
 }
 
 export interface JobCallbacks {
   onActivityChange: (activity: Activity) => void;
   onResult: (lastRun: LastRun) => void;
 }
+
+export type ResultListener = (result: LastRun) => void;
 
 export interface JobHandle {
   /** Removes a still-queued job, or aborts it if it's the one currently running. No-op once settled. */
@@ -37,8 +41,16 @@ interface Job extends JobCallbacks {
 export class InjectionQueue {
   private pending: Job[] = [];
   private current: Job | null = null;
+  private listeners = new Set<ResultListener>();
 
   constructor(private readonly timeoutMs: number = DEFAULT_TIMEOUT_MS) {}
+
+  /** Observes every settled result across every widget (ticket 06: detecting dcs-serve going
+   * unreachable mid-session doesn't depend on which widget happened to trigger the call). */
+  subscribe(listener: ResultListener): () => void {
+    this.listeners.add(listener);
+    return () => this.listeners.delete(listener);
+  }
 
   submit(code: string, callbacks: JobCallbacks): JobHandle {
     const job: Job = {
@@ -89,18 +101,20 @@ export class InjectionQueue {
 
     injectScript(job.code, job.abortController.signal)
       .then((res) => {
-        job.onResult({
+        this.settle(job, {
           status: res.ok ? 'success' : 'error',
           elapsedMs: performance.now() - startedAt,
           body: res.ok ? res.result : (res.message ?? res.result),
+          errorType: res.ok ? null : res.error_type,
         });
       })
       .catch(() => {
         if (job.stopReason === 'timeout') {
-          job.onResult({
+          this.settle(job, {
             status: 'timeout',
             elapsedMs: performance.now() - startedAt,
             body: null,
+            errorType: null,
           });
         }
         // stopReason === 'user': a deliberate cancellation, not a result worth reporting.
@@ -112,6 +126,11 @@ export class InjectionQueue {
         this.current = null;
         this.advance();
       });
+  }
+
+  private settle(job: Job, result: LastRun): void {
+    job.onResult(result);
+    for (const listener of this.listeners) listener(result);
   }
 
   private advance(): void {

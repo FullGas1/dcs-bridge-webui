@@ -22,6 +22,12 @@ function ok(result: string) {
   return { ok: true, result, error_type: null, message: null, status_code: null } as const;
 }
 
+function connectionErr(message: string) {
+  return {
+    ok: false, result: null, error_type: 'connection_error', message, status_code: null,
+  } as const;
+}
+
 async function flush(): Promise<void> {
   await new Promise((resolve) => setTimeout(resolve, 0));
 }
@@ -140,5 +146,44 @@ describe('InjectionQueue', () => {
     handle.cancel();
 
     expect(signalSeen?.aborted).toBe(true);
+  });
+
+  it('notifies every subscriber of a settled result, in addition to the job callback', async () => {
+    injectScriptMock.mockResolvedValue(ok('42'));
+    const queue = new InjectionQueue();
+    const listener = vi.fn();
+    queue.subscribe(listener);
+
+    queue.submit('return 42', callbacks());
+    await flush();
+
+    expect(listener).toHaveBeenCalledWith(expect.objectContaining({ status: 'success', body: '42' }));
+  });
+
+  it('preserves the backend error_type for subscribers to distinguish a connection failure', async () => {
+    injectScriptMock.mockResolvedValue(connectionErr('refused'));
+    const queue = new InjectionQueue();
+    const listener = vi.fn();
+    queue.subscribe(listener);
+
+    queue.submit('return 1', callbacks());
+    await flush();
+
+    expect(listener).toHaveBeenCalledWith(
+      expect.objectContaining({ status: 'error', errorType: 'connection_error' }),
+    );
+  });
+
+  it('stops notifying a subscriber after it unsubscribes', async () => {
+    injectScriptMock.mockResolvedValue(ok('42'));
+    const queue = new InjectionQueue();
+    const listener = vi.fn();
+    const unsubscribe = queue.subscribe(listener);
+    unsubscribe();
+
+    queue.submit('return 42', callbacks());
+    await flush();
+
+    expect(listener).not.toHaveBeenCalled();
   });
 });

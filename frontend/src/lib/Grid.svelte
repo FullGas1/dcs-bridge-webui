@@ -1,9 +1,12 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import Widget from './Widget.svelte';
+  import ConnectionBanner from './ConnectionBanner.svelte';
   import { InjectionQueue } from './injectionQueue';
   import { loadWidgets, saveWidgets } from './widgetSession';
-  import { listTemplates, saveTemplate, deleteTemplate, type Template } from './api';
+  import {
+    listTemplates, saveTemplate, deleteTemplate, checkConnection, setApiKey, type Template,
+  } from './api';
 
   interface WidgetRecord {
     id: number;
@@ -27,6 +30,31 @@
 
   async function handleDeleteTemplate(id: string): Promise<void> {
     templates = await deleteTemplate(id);
+  }
+
+  // Connection banner (ticket 06). Optimistic default so the banner doesn't flash on a page
+  // that's actually fine while the initial probe is in flight.
+  let connected = $state(true);
+  onMount(async () => {
+    const status = await checkConnection();
+    connected = status.connected;
+  });
+
+  // A successful run proves we're connected; a connection/auth-shaped failure means we're not.
+  // A script the user wrote themselves failing (dcs_error) says nothing about connectivity.
+  queue.subscribe((result) => {
+    if (result.status === 'success') {
+      connected = true;
+    } else if (result.errorType === 'connection_error' || result.errorType === 'http_error') {
+      connected = false;
+    }
+  });
+
+  async function handleConnectionSubmit(apiKey: string): Promise<boolean> {
+    await setApiKey(apiKey);
+    const status = await checkConnection();
+    connected = status.connected;
+    return status.connected;
   }
 
   const stored = loadWidgets();
@@ -62,6 +90,10 @@
     if (widget) widget.code = code;
   }
 </script>
+
+{#if !connected}
+  <ConnectionBanner onSubmit={handleConnectionSubmit} />
+{/if}
 
 <div class="grid">
   {#each widgets as w (w.id)}

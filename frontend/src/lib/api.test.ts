@@ -1,5 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { deleteTemplate, injectScript, listTemplates, saveTemplate } from './api';
+import {
+  checkConnection, deleteTemplate, injectScript, listTemplates, saveTemplate, setApiKey,
+} from './api';
 
 describe('injectScript', () => {
   afterEach(() => {
@@ -92,5 +94,41 @@ describe('template API', () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false, status: 400 }));
 
     await expect(saveTemplate('', 'x')).rejects.toThrow(/400/);
+  });
+});
+
+describe('connection API', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it('checkConnection GETs /api/connection/status', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true, json: async () => ({ connected: true, message: null }),
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    const status = await checkConnection();
+
+    expect(fetchMock).toHaveBeenCalledWith('/api/connection/status');
+    expect(status).toEqual({ connected: true, message: null });
+  });
+
+  it('setApiKey PUTs the key to /api/connection', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true, json: async () => ({}) });
+    vi.stubGlobal('fetch', fetchMock);
+
+    await setApiKey('secret123');
+
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(url).toBe('/api/connection');
+    expect(init.method).toBe('PUT');
+    expect(JSON.parse(init.body)).toEqual({ api_key: 'secret123' });
+  });
+
+  it('setApiKey throws when the backend rejects the update', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false, status: 500 }));
+
+    await expect(setApiKey('x')).rejects.toThrow(/500/);
   });
 });

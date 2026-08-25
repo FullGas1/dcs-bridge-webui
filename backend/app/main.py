@@ -51,6 +51,17 @@ def set_connection(settings: ConnectionSettings) -> dict:
     return store.set_connection(**fields)
 
 
+@app.get("/api/connection/status")
+async def connection_status() -> dict:
+    """A trivial probe over the same /api/exec path a real injection takes, so the UI can tell
+    connected from not without duplicating dcs_client's error classification."""
+    conn = store.get_connection()
+    result = await exec_lua(
+        host=conn["host"], port=conn["port"], api_key=conn["api_key"], code="return 1", timeout=5.0,
+    )
+    return {"connected": result.ok, "message": None if result.ok else result.message}
+
+
 class TemplateIn(BaseModel):
     name: str
     code: str

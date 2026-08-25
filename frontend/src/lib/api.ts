@@ -57,3 +57,27 @@ export async function deleteTemplate(id: string): Promise<Template[]> {
   }
   return response.json();
 }
+
+export interface ConnectionStatus {
+  connected: boolean;
+  message: string | null;
+}
+
+export async function checkConnection(): Promise<ConnectionStatus> {
+  const response = await fetch('/api/connection/status');
+  if (!response.ok) {
+    throw new Error(`backend returned HTTP ${response.status}`);
+  }
+  return response.json();
+}
+
+export async function setApiKey(apiKey: string): Promise<void> {
+  const response = await fetch('/api/connection', {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ api_key: apiKey }),
+  });
+  if (!response.ok) {
+    throw new Error(`backend returned HTTP ${response.status}`);
+  }
+}

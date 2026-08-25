@@ -2,7 +2,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render } from '@testing-library/svelte';
 import Grid from './Grid.svelte';
 import {
-  injectScript, listTemplates, saveTemplate, deleteTemplate, type InjectResult, type Template,
+  injectScript, listTemplates, saveTemplate, deleteTemplate, checkConnection, setApiKey,
+  type InjectResult, type Template,
 } from './api';
 import { loadWidgets, saveWidgets } from './widgetSession';
 
@@ -11,15 +12,20 @@ vi.mock('./api', () => ({
   listTemplates: vi.fn(),
   saveTemplate: vi.fn(),
   deleteTemplate: vi.fn(),
+  checkConnection: vi.fn(),
+  setApiKey: vi.fn(),
 }));
 const injectScriptMock = vi.mocked(injectScript);
 const listTemplatesMock = vi.mocked(listTemplates);
 const saveTemplateMock = vi.mocked(saveTemplate);
 const deleteTemplateMock = vi.mocked(deleteTemplate);
+const checkConnectionMock = vi.mocked(checkConnection);
+const setApiKeyMock = vi.mocked(setApiKey);
 
 beforeEach(() => {
   localStorage.clear();
   listTemplatesMock.mockResolvedValue([]);
+  checkConnectionMock.mockResolvedValue({ connected: true, message: null });
 });
 
 afterEach(() => {
@@ -28,6 +34,8 @@ afterEach(() => {
   listTemplatesMock.mockReset();
   saveTemplateMock.mockReset();
   deleteTemplateMock.mockReset();
+  checkConnectionMock.mockReset();
+  setApiKeyMock.mockReset();
   vi.restoreAllMocks();
 });
 
@@ -188,5 +196,76 @@ describe('Grid', () => {
     const dropdownButtons = getAllByText('Templates');
     await fireEvent.click(dropdownButtons[1]!);
     expect(queryAllByText('check menu')).toHaveLength(0);
+  });
+
+  it('shows the connection banner when the initial probe reports disconnected', async () => {
+    checkConnectionMock.mockResolvedValue({ connected: false, message: 'refused' });
+    const { findByText } = render(Grid);
+
+    expect(await findByText(/Can't reach dcs-serve/)).toBeInTheDocument();
+  });
+
+  it('does not show the connection banner when the initial probe succeeds', async () => {
+    checkConnectionMock.mockResolvedValue({ connected: true, message: null });
+    const { queryByText } = render(Grid);
+    await flush();
+
+    expect(queryByText(/Can't reach dcs-serve/)).toBeNull();
+  });
+
+  it('hides the banner once a submitted key connects successfully', async () => {
+    checkConnectionMock.mockResolvedValueOnce({ connected: false, message: 'refused' });
+    const { findByText, getByLabelText, getByText, queryByText } = render(Grid);
+    await findByText(/Can't reach dcs-serve/);
+
+    checkConnectionMock.mockResolvedValue({ connected: true, message: null });
+    await fireEvent.input(getByLabelText('api_key'), { target: { value: 'the-real-key' } });
+    await fireEvent.click(getByText('Connect'));
+    await flush();
+
+    expect(setApiKeyMock).toHaveBeenCalledWith('the-real-key');
+    expect(queryByText(/Can't reach dcs-serve/)).toBeNull();
+  });
+
+  it('keeps the banner visible with a failure message when the retry still fails', async () => {
+    checkConnectionMock.mockResolvedValue({ connected: false, message: 'still refused' });
+    const { findByText, getByLabelText, getByText, getByRole } = render(Grid);
+    await findByText(/Can't reach dcs-serve/);
+
+    await fireEvent.input(getByLabelText('api_key'), { target: { value: 'wrong-key' } });
+    await fireEvent.click(getByText('Connect'));
+    await flush();
+
+    expect(getByText(/Can't reach dcs-serve/)).toBeInTheDocument();
+    expect(getByRole('status')).toHaveTextContent(/still/i);
+  });
+
+  it('shows the banner again if a later injection fails with a connection-shaped error', async () => {
+    checkConnectionMock.mockResolvedValue({ connected: true, message: null });
+    injectScriptMock.mockResolvedValue({
+      ok: false, result: null, error_type: 'connection_error', message: 'dropped', status_code: null,
+    });
+    const { getByText, findByText, queryByText } = render(Grid);
+    await flush();
+    expect(queryByText(/Can't reach dcs-serve/)).toBeNull();
+
+    await fireEvent.click(getByText('Send'));
+    await flush();
+
+    expect(await findByText(/Can't reach dcs-serve/)).toBeInTheDocument();
+  });
+
+  it('does not show the banner when an injection fails because of the user\'s own script (dcs_error)', async () => {
+    checkConnectionMock.mockResolvedValue({ connected: true, message: null });
+    injectScriptMock.mockResolvedValue({
+      ok: false, result: null, error_type: 'dcs_error', message: 'attempt to call a nil value', status_code: null,
+    });
+    const { getByText, queryByText } = render(Grid);
+    await flush();
+
+    await fireEvent.click(getByText('Send'));
+    await flush();
+
+    expect(queryByText(/Can't reach dcs-serve/)).toBeNull();
   });
 });
