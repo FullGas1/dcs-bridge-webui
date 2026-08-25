@@ -20,6 +20,17 @@ app = FastAPI(title="dcs-bridge-webui backend")
 store = Store()
 
 
+@app.middleware("http")
+async def no_cache(request, call_next):
+    """A single-user local tool has no CDN/scale reason to let the browser cache anything
+    across a rebuild - and heuristic caching (no explicit Cache-Control from StaticFiles)
+    repeatedly served a stale bundle after a rebuild during development. Forces revalidation
+    (still cheap: a 304 on an unchanged ETag) instead of silently serving old JS/CSS/HTML."""
+    response = await call_next(request)
+    response.headers["Cache-Control"] = "no-cache"
+    return response
+
+
 class InjectRequest(BaseModel):
     code: str
     timeout: float = 30.0
