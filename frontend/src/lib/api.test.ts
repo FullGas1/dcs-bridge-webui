@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { injectScript } from './api';
+import { deleteTemplate, injectScript, listTemplates, saveTemplate } from './api';
 
 describe('injectScript', () => {
   afterEach(() => {
@@ -41,5 +41,56 @@ describe('injectScript', () => {
     await injectScript('return 1', controller.signal);
 
     expect(fetchMock.mock.calls[0][1].signal).toBe(controller.signal);
+  });
+});
+
+describe('template API', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it('listTemplates GETs /api/templates', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true, json: async () => [{ id: '1', name: 'a', code: 'return 1' }],
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    const templates = await listTemplates();
+
+    expect(fetchMock).toHaveBeenCalledWith('/api/templates');
+    expect(templates).toEqual([{ id: '1', name: 'a', code: 'return 1' }]);
+  });
+
+  it('saveTemplate POSTs the name and code, returning the updated list', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true, json: async () => [{ id: '1', name: 'a', code: 'return 1' }],
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    const templates = await saveTemplate('a', 'return 1');
+
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(url).toBe('/api/templates');
+    expect(init.method).toBe('POST');
+    expect(JSON.parse(init.body)).toEqual({ name: 'a', code: 'return 1' });
+    expect(templates).toEqual([{ id: '1', name: 'a', code: 'return 1' }]);
+  });
+
+  it('deleteTemplate DELETEs /api/templates/:id, returning the updated list', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true, json: async () => [] });
+    vi.stubGlobal('fetch', fetchMock);
+
+    const templates = await deleteTemplate('abc 123');
+
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(url).toBe('/api/templates/abc%20123');
+    expect(init.method).toBe('DELETE');
+    expect(templates).toEqual([]);
+  });
+
+  it('throws when the backend rejects a template save', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false, status: 400 }));
+
+    await expect(saveTemplate('', 'x')).rejects.toThrow(/400/);
   });
 });

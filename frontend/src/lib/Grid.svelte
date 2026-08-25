@@ -1,7 +1,9 @@
 <script lang="ts">
+  import { onMount } from 'svelte';
   import Widget from './Widget.svelte';
   import { InjectionQueue } from './injectionQueue';
   import { loadWidgets, saveWidgets } from './widgetSession';
+  import { listTemplates, saveTemplate, deleteTemplate, type Template } from './api';
 
   interface WidgetRecord {
     id: number;
@@ -12,6 +14,20 @@
   // One shared queue for every widget on the page (ticket 03): only one injection in flight
   // across the whole grid, regardless of which widget triggered it.
   const queue = new InjectionQueue();
+
+  // One shared template list for every widget on the page (ticket 05).
+  let templates = $state<Template[]>([]);
+  onMount(() => {
+    listTemplates().then((list) => (templates = list));
+  });
+
+  async function handleSaveTemplate(name: string, code: string): Promise<void> {
+    templates = await saveTemplate(name, code);
+  }
+
+  async function handleDeleteTemplate(id: string): Promise<void> {
+    templates = await deleteTemplate(id);
+  }
 
   const stored = loadWidgets();
   let nextId = stored && stored.length > 0 ? Math.max(...stored.map((w) => w.id)) + 1 : 1;
@@ -57,6 +73,9 @@
       onClose={() => closeWidget(w.id)}
       onToggleExpand={() => toggleExpand(w.id)}
       onCodeChange={(code) => updateCode(w.id, code)}
+      {templates}
+      onSaveTemplate={handleSaveTemplate}
+      onDeleteTemplate={handleDeleteTemplate}
     />
   {/each}
   <button type="button" class="add-widget" onclick={addWidget} aria-label="Add widget">+</button>

@@ -1,8 +1,9 @@
-"""Local, gitignored key-value store for connection settings (and, later, templates).
+"""Local, gitignored key-value store for connection settings and script templates.
 
 Never versioned: personal secrets (api_key) and personal debug scripts have no business in git.
 """
 import json
+import uuid
 from pathlib import Path
 from threading import Lock
 from typing import Any
@@ -46,3 +47,25 @@ class Store:
             data["connection"] = conn
             self._write(data)
             return conn
+
+    def get_templates(self) -> list[dict[str, Any]]:
+        return self._read().get("templates", [])
+
+    def save_template(self, name: str, code: str) -> list[dict[str, Any]]:
+        """Creates a template, or overwrites the existing one with the same name (ticket 05:
+        at most one template per name - no silent duplicates)."""
+        with self._lock:
+            data = self._read()
+            templates = [t for t in data.get("templates", []) if t["name"] != name]
+            templates.append({"id": uuid.uuid4().hex, "name": name, "code": code})
+            data["templates"] = templates
+            self._write(data)
+            return templates
+
+    def delete_template(self, template_id: str) -> list[dict[str, Any]]:
+        with self._lock:
+            data = self._read()
+            templates = [t for t in data.get("templates", []) if t["id"] != template_id]
+            data["templates"] = templates
+            self._write(data)
+            return templates

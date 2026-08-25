@@ -1,6 +1,8 @@
 <script lang="ts">
   import { untrack } from 'svelte';
   import CodeMirrorEditor from './CodeMirrorEditor.svelte';
+  import TemplateDropdown from './TemplateDropdown.svelte';
+  import type { Template } from './api';
   import type { InjectionQueue, Activity, LastRun, JobHandle } from './injectionQueue';
 
   interface Props {
@@ -11,9 +13,13 @@
     onToggleExpand: () => void;
     initialCode?: string;
     onCodeChange?: (code: string) => void;
+    templates: Template[];
+    onSaveTemplate: (name: string, code: string) => void;
+    onDeleteTemplate: (id: string) => void;
   }
   let {
     number, queue, expanded, onClose, onToggleExpand, initialCode = '', onCodeChange,
+    templates, onSaveTemplate, onDeleteTemplate,
   }: Props = $props();
 
   // Seeded once from the prop, then independently editable - not a live mirror of it.
@@ -21,10 +27,23 @@
   let activity = $state<Activity>('idle');
   let lastRun = $state<LastRun | null>(null);
   let jobHandle: JobHandle | null = null;
+  let editor: CodeMirrorEditor;
 
   function handleChange(value: string): void {
     code = value;
     onCodeChange?.(value);
+  }
+
+  function memorize(): void {
+    const name = window.prompt('Name this template:');
+    if (!name || !name.trim()) return;
+    onSaveTemplate(name.trim(), code);
+  }
+
+  function loadTemplate(template: Template): void {
+    editor.setValue(template.code);
+    code = template.code;
+    onCodeChange?.(template.code);
   }
 
   function send(): void {
@@ -60,11 +79,18 @@
     <button type="button" onclick={send} disabled={activity !== 'idle'}>Send</button>
     <button type="button" onclick={stop} disabled={activity === 'idle'}>Stop</button>
     <button type="button" onclick={onToggleExpand}>{expanded ? 'Collapse' : 'Expand'}</button>
+    <button type="button" onclick={memorize}>Memorize</button>
+    <TemplateDropdown {templates} onSelect={loadTemplate} onDelete={onDeleteTemplate} />
     <button type="button" class="close-btn" onclick={close} aria-label="Close widget">&times;</button>
   </div>
 
   <div class="widget-editor">
-    <CodeMirrorEditor initialValue={initialCode} onChange={handleChange} onInjectRequest={send} />
+    <CodeMirrorEditor
+      bind:this={editor}
+      initialValue={initialCode}
+      onChange={handleChange}
+      onInjectRequest={send}
+    />
   </div>
 
   <div class="widget-result">

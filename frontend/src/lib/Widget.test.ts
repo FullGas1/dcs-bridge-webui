@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render } from '@testing-library/svelte';
 import Widget from './Widget.svelte';
 import { InjectionQueue } from './injectionQueue';
-import { injectScript } from './api';
+import { injectScript, type Template } from './api';
 
 vi.mock('./api', () => ({ injectScript: vi.fn() }));
 const injectScriptMock = vi.mocked(injectScript);
@@ -10,11 +10,14 @@ const injectScriptMock = vi.mocked(injectScript);
 afterEach(() => {
   cleanup();
   injectScriptMock.mockReset();
+  vi.restoreAllMocks();
 });
 
 async function flush(): Promise<void> {
   await new Promise((resolve) => setTimeout(resolve, 0));
 }
+
+const sampleTemplates: Template[] = [{ id: '1', name: 'check menu', code: 'return checkMenu()' }];
 
 function baseProps(overrides: Partial<Record<string, unknown>> = {}) {
   return {
@@ -23,6 +26,9 @@ function baseProps(overrides: Partial<Record<string, unknown>> = {}) {
     expanded: false,
     onClose: vi.fn(),
     onToggleExpand: vi.fn(),
+    templates: sampleTemplates,
+    onSaveTemplate: vi.fn(),
+    onDeleteTemplate: vi.fn(),
     ...overrides,
   };
 }
@@ -126,5 +132,64 @@ describe('Widget', () => {
     await fireEvent.click(getByLabelText('Close widget'));
 
     expect(handleCancelSpy).toHaveBeenCalledOnce();
+  });
+
+  it('prompts for a name and calls onSaveTemplate with the current code when Memorize is clicked', async () => {
+    vi.spyOn(window, 'prompt').mockReturnValue('my template');
+    const onSaveTemplate = vi.fn();
+    const { getByText } = render(Widget, { props: baseProps({ onSaveTemplate }) });
+
+    await fireEvent.click(getByText('Memorize'));
+
+    expect(onSaveTemplate).toHaveBeenCalledWith('my template', expect.any(String));
+  });
+
+  it('does not save when the naming prompt is cancelled', async () => {
+    vi.spyOn(window, 'prompt').mockReturnValue(null);
+    const onSaveTemplate = vi.fn();
+    const { getByText } = render(Widget, { props: baseProps({ onSaveTemplate }) });
+
+    await fireEvent.click(getByText('Memorize'));
+
+    expect(onSaveTemplate).not.toHaveBeenCalled();
+  });
+
+  it('does not save a blank template name', async () => {
+    vi.spyOn(window, 'prompt').mockReturnValue('   ');
+    const onSaveTemplate = vi.fn();
+    const { getByText } = render(Widget, { props: baseProps({ onSaveTemplate }) });
+
+    await fireEvent.click(getByText('Memorize'));
+
+    expect(onSaveTemplate).not.toHaveBeenCalled();
+  });
+
+  it('loads a selected template into its own editor', async () => {
+    const { getByText, container } = render(Widget, { props: baseProps() });
+
+    await fireEvent.click(getByText('Templates'));
+    await fireEvent.click(getByText('check menu'));
+
+    expect(container.querySelector('.cm-content')).toHaveTextContent('return checkMenu()');
+  });
+
+  it('reports the loaded template as a code change (so it persists)', async () => {
+    const onCodeChange = vi.fn();
+    const { getByText } = render(Widget, { props: baseProps({ onCodeChange }) });
+
+    await fireEvent.click(getByText('Templates'));
+    await fireEvent.click(getByText('check menu'));
+
+    expect(onCodeChange).toHaveBeenCalledWith('return checkMenu()');
+  });
+
+  it('calls onDeleteTemplate with the template id from its dropdown', async () => {
+    const onDeleteTemplate = vi.fn();
+    const { getByText, getByLabelText } = render(Widget, { props: baseProps({ onDeleteTemplate }) });
+
+    await fireEvent.click(getByText('Templates'));
+    await fireEvent.click(getByLabelText('Delete template check menu'));
+
+    expect(onDeleteTemplate).toHaveBeenCalledWith('1');
   });
 });

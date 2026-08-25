@@ -6,7 +6,7 @@ relays every call, so the key never reaches client-side JS.
 from dataclasses import asdict
 from typing import Optional
 
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 
 from .dcs_client import exec_lua
@@ -49,3 +49,26 @@ def get_connection() -> dict:
 def set_connection(settings: ConnectionSettings) -> dict:
     fields = {k: v for k, v in settings.model_dump().items() if v is not None}
     return store.set_connection(**fields)
+
+
+class TemplateIn(BaseModel):
+    name: str
+    code: str
+
+
+@app.get("/api/templates")
+def list_templates() -> list[dict]:
+    return store.get_templates()
+
+
+@app.post("/api/templates")
+def save_template(template: TemplateIn) -> list[dict]:
+    name = template.name.strip()
+    if not name:
+        raise HTTPException(status_code=400, detail="Template name must not be empty")
+    return store.save_template(name, template.code)
+
+
+@app.delete("/api/templates/{template_id}")
+def delete_template(template_id: str) -> list[dict]:
+    return store.delete_template(template_id)

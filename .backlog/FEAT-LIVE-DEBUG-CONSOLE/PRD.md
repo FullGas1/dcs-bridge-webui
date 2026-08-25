@@ -10,7 +10,7 @@
 | `02-single-widget-injection-loop` | done | 02 — Single-widget injection loop |
 | `03-multi-widget-grid-queue` | done | 03 — Multi-widget grid and injection queue |
 | `04-session-persistence-localstorage` | done | 04 — Session persistence via localStorage |
-| `05-script-templates` | open | 05 — Script templates |
+| `05-script-templates` | done | 05 — Script templates |
 | `06-connection-banner` | open | 06 — Turnkey connection banner |
 | `07-branding-header` | open | 07 — Branding header |
 | `08-single-exe-packaging` | open | 08 — Single-exe packaging |

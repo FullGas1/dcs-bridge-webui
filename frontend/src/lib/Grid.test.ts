@@ -1,19 +1,34 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render } from '@testing-library/svelte';
 import Grid from './Grid.svelte';
-import { injectScript, type InjectResult } from './api';
+import {
+  injectScript, listTemplates, saveTemplate, deleteTemplate, type InjectResult, type Template,
+} from './api';
 import { loadWidgets, saveWidgets } from './widgetSession';
 
-vi.mock('./api', () => ({ injectScript: vi.fn() }));
+vi.mock('./api', () => ({
+  injectScript: vi.fn(),
+  listTemplates: vi.fn(),
+  saveTemplate: vi.fn(),
+  deleteTemplate: vi.fn(),
+}));
 const injectScriptMock = vi.mocked(injectScript);
+const listTemplatesMock = vi.mocked(listTemplates);
+const saveTemplateMock = vi.mocked(saveTemplate);
+const deleteTemplateMock = vi.mocked(deleteTemplate);
 
 beforeEach(() => {
   localStorage.clear();
+  listTemplatesMock.mockResolvedValue([]);
 });
 
 afterEach(() => {
   cleanup();
   injectScriptMock.mockReset();
+  listTemplatesMock.mockReset();
+  saveTemplateMock.mockReset();
+  deleteTemplateMock.mockReset();
+  vi.restoreAllMocks();
 });
 
 async function flush(): Promise<void> {
@@ -126,5 +141,52 @@ describe('Grid', () => {
 
     expect(queryAllByText(/Widget \d/)).toHaveLength(0);
     expect(getByLabelText('Add widget')).toBeInTheDocument();
+  });
+
+  it('loads templates on mount and offers the same list in every widget', async () => {
+    const templates: Template[] = [{ id: '1', name: 'check menu', code: 'return checkMenu()' }];
+    listTemplatesMock.mockResolvedValue(templates);
+    const { getByLabelText, getAllByLabelText, getAllByText } = render(Grid);
+    await fireEvent.click(getByLabelText('Add widget'));
+    await flush();
+
+    const dropdownButtons = getAllByText('Templates');
+    await fireEvent.click(dropdownButtons[0]!);
+    await fireEvent.click(dropdownButtons[1]!);
+
+    expect(getAllByLabelText('Delete template check menu')).toHaveLength(2);
+  });
+
+  it('makes a template saved from one widget appear in every other widget immediately', async () => {
+    listTemplatesMock.mockResolvedValue([]);
+    saveTemplateMock.mockResolvedValue([{ id: '1', name: 'new one', code: 'x' }]);
+    vi.spyOn(window, 'prompt').mockReturnValue('new one');
+    const { getByLabelText, getAllByText } = render(Grid);
+    await fireEvent.click(getByLabelText('Add widget'));
+    await flush();
+
+    await fireEvent.click(getAllByText('Memorize')[0]!);
+    await flush();
+
+    const dropdownButtons = getAllByText('Templates');
+    await fireEvent.click(dropdownButtons[1]!); // open the *other* widget's dropdown
+    expect(getAllByText('new one')).toHaveLength(1);
+  });
+
+  it('removes a deleted template from every widget immediately', async () => {
+    const templates: Template[] = [{ id: '1', name: 'check menu', code: 'x' }];
+    listTemplatesMock.mockResolvedValue(templates);
+    deleteTemplateMock.mockResolvedValue([]);
+    const { getByLabelText, getAllByText, getAllByLabelText, queryAllByText } = render(Grid);
+    await fireEvent.click(getByLabelText('Add widget'));
+    await flush();
+
+    await fireEvent.click(getAllByText('Templates')[0]!);
+    await fireEvent.click(getAllByLabelText('Delete template check menu')[0]!);
+    await flush();
+
+    const dropdownButtons = getAllByText('Templates');
+    await fireEvent.click(dropdownButtons[1]!);
+    expect(queryAllByText('check menu')).toHaveLength(0);
   });
 });
