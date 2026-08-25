@@ -2,6 +2,19 @@
 
 **Status:** ready-for-agent.
 
+## Tickets
+
+| Ticket | Status | Title |
+|---|---|---|
+| `01-backend-skeleton-config-store-proxy` | open | 01 — Backend skeleton, local config store, injection proxy |
+| `02-single-widget-injection-loop` | open | 02 — Single-widget injection loop |
+| `03-multi-widget-grid-queue` | open | 03 — Multi-widget grid and injection queue |
+| `04-session-persistence-localstorage` | open | 04 — Session persistence via localStorage |
+| `05-script-templates` | open | 05 — Script templates |
+| `06-connection-banner` | open | 06 — Turnkey connection banner |
+| `07-branding-header` | open | 07 — Branding header |
+| `08-single-exe-packaging` | open | 08 — Single-exe packaging |
+
 ## Problem Statement
 
 Debugging a live DCS mission through VEAF-dcs-bridge today means either driving `exec_lua` by
