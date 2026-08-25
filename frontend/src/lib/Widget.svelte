@@ -171,13 +171,14 @@
   }
 
   .widget[data-expanded='true'] {
-    /* 85vh alone can be *shorter* than the 640px default on a short/unmaximized window,
-       making Expand shrink the widget instead of growing it (observed live) - and even at
-       "not shorter", a bare max(640px, 85vh) would often equal exactly 640px, i.e. no visible
-       change. 1400px is a floor well above the default regardless of viewport (the page
-       scrolls for the rest, as it already does for multiple widgets); 85vh still takes over
-       and grows further on a genuinely tall screen. */
-    height: max(1400px, 85vh);
+    /* No height cap at all: Expand means "show the *whole* script", however many lines that
+       is - not a bigger-but-still-bounded box (a fixed/vh-based height only ever showed a
+       larger fixed slice, e.g. 1400px capped a 300-line script to ~58 visible lines, still
+       short of "the whole script" - reported live). With no height here, widget-editor's
+       flex:1 has nothing to distribute against and CodeMirror renders at its full natural
+       size instead of scrolling internally; the grid (ticket 03) scrolls the page for
+       whatever doesn't fit the viewport. */
+    height: auto;
   }
 
   .widget-header {
