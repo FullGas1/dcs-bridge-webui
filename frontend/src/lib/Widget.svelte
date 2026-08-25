@@ -167,12 +167,12 @@
   }
 
   .widget[data-expanded='true'] {
-    grid-column: span 2;
-    grid-row: span 2;
+    min-height: 60vh;
   }
 
   .widget-header {
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
     gap: 8px;
     padding: 6px 8px;

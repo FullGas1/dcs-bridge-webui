@@ -51,12 +51,10 @@ main {
 
 .grid {
   flex: 1;
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-  grid-auto-rows: minmax(220px, auto);
+  display: flex;
+  flex-direction: column;
   gap: 12px;
   padding: 16px;
-  align-content: start;
   /* The page itself scrolls when widgets run past the viewport (ticket 03). */
   overflow-y: auto;
 }
