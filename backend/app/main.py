@@ -3,13 +3,17 @@
 The browser never talks to dcs-serve directly (ADR 0001) - this app holds the api_key and
 relays every call, so the key never reaches client-side JS.
 """
+import sys
 from dataclasses import asdict
+from pathlib import Path
 from typing import Optional
 
 from fastapi import FastAPI, HTTPException
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 from .dcs_client import exec_lua
+from .static import resolve_frontend_dist
 from .store import Store
 
 app = FastAPI(title="dcs-bridge-webui backend")
@@ -83,3 +87,12 @@ def save_template(template: TemplateIn) -> list[dict]:
 @app.delete("/api/templates/{template_id}")
 def delete_template(template_id: str) -> list[dict]:
     return store.delete_template(template_id)
+
+
+# Serves the built frontend (ticket 08), if any - registered last so it never shadows an
+# /api/* route above. In dev, nothing is built yet, so this is a no-op: the frontend's own
+# Vite dev server proxies /api/* to this backend instead (see frontend/vite.config.ts).
+_REPO_ROOT = Path(__file__).resolve().parent.parent.parent
+_frontend_dist = resolve_frontend_dist(getattr(sys, "_MEIPASS", None), _REPO_ROOT)
+if _frontend_dist is not None:
+    app.mount("/", StaticFiles(directory=str(_frontend_dist), html=True), name="frontend")

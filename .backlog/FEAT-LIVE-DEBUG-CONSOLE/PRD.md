@@ -1,6 +1,6 @@
 # FEAT-LIVE-DEBUG-CONSOLE — turnkey web UI for live DCS debugging over dcs-bridge
 
-**Status:** ready-for-agent.
+**Status:** delivered — all 8 tickets merged to `feature/live-debug-console`.
 
 ## Tickets
 
@@ -13,7 +13,7 @@
 | `05-script-templates` | done | 05 — Script templates |
 | `06-connection-banner` | done | 06 — Turnkey connection banner |
 | `07-branding-header` | done | 07 — Branding header |
-| `08-single-exe-packaging` | open | 08 — Single-exe packaging |
+| `08-single-exe-packaging` | done | 08 — Single-exe packaging |
 
 ## Problem Statement
 

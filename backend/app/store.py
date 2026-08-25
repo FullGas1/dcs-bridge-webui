@@ -3,12 +3,25 @@
 Never versioned: personal secrets (api_key) and personal debug scripts have no business in git.
 """
 import json
+import sys
 import uuid
 from pathlib import Path
 from threading import Lock
 from typing import Any
 
-DEFAULT_STORE_PATH = Path(__file__).resolve().parent.parent / "data" / "store.json"
+
+def resolve_store_path(frozen: bool, executable: Path, source_file: Path) -> Path:
+    """Packaged as a --onefile exe, `source_file` resolves inside PyInstaller's ephemeral
+    per-run extraction dir - writing there would silently lose every setting and template the
+    moment the exe exits. The store must instead live next to the exe itself, so it survives
+    between runs (and is easy for a user to find/back up)."""
+    base = executable.resolve().parent if frozen else source_file.resolve().parent.parent
+    return base / "data" / "store.json"
+
+
+DEFAULT_STORE_PATH = resolve_store_path(
+    getattr(sys, "frozen", False), Path(sys.executable), Path(__file__),
+)
 
 CONNECTION_DEFAULTS = {
     "host": "127.0.0.1",
