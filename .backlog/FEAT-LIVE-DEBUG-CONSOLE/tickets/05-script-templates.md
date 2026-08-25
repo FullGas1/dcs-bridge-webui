@@ -1,6 +1,6 @@
 # 05 — script templates
 
-**Status:** open (ready-for-agent)
+**Status:** done
 
 ## What to build
 

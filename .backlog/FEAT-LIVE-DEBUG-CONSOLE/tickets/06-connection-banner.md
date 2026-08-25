@@ -1,6 +1,6 @@
 # 06 — turnkey connection banner
 
-**Status:** open (ready-for-agent)
+**Status:** done
 
 ## What to build
 

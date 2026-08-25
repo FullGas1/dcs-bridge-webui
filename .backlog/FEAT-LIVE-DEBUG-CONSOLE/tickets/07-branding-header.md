@@ -1,6 +1,6 @@
 # 07 — branding header
 
-**Status:** open (ready-for-agent)
+**Status:** done
 
 ## What to build
 

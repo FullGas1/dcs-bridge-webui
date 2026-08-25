@@ -1,6 +1,6 @@
 # 08 — single-exe packaging
 
-**Status:** open (ready-for-agent)
+**Status:** done
 
 ## What to build
 

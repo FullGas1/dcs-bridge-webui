@@ -1,0 +1,22 @@
+# Python
+backend/venv/
+backend/.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Local data (connection config, api_key, templates) - personal, never versioned
+backend/data/
+
+# Frontend
+frontend/node_modules/
+frontend/dist/
+
+# Packaging
+build/
+dist/
+*.spec
+
+# Editors
+.vscode/
+.idea/

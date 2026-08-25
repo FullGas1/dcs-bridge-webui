@@ -1,6 +1,6 @@
 # 04 — session persistence via localStorage
 
-**Status:** open (ready-for-agent)
+**Status:** done
 
 ## What to build
 

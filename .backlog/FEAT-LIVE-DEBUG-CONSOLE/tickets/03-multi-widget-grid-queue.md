@@ -1,6 +1,6 @@
 # 03 — multi-widget grid and injection queue
 
-**Status:** open (ready-for-agent)
+**Status:** done
 
 ## What to build
 

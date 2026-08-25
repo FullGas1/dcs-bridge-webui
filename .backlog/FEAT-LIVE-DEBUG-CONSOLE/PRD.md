@@ -1,19 +1,19 @@
 # FEAT-LIVE-DEBUG-CONSOLE — turnkey web UI for live DCS debugging over dcs-bridge
 
-**Status:** ready-for-agent.
+**Status:** delivered — all 8 tickets merged to `feature/live-debug-console`.
 
 ## Tickets
 
 | Ticket | Status | Title |
 |---|---|---|
-| `01-backend-skeleton-config-store-proxy` | open | 01 — Backend skeleton, local config store, injection proxy |
-| `02-single-widget-injection-loop` | open | 02 — Single-widget injection loop |
-| `03-multi-widget-grid-queue` | open | 03 — Multi-widget grid and injection queue |
-| `04-session-persistence-localstorage` | open | 04 — Session persistence via localStorage |
-| `05-script-templates` | open | 05 — Script templates |
-| `06-connection-banner` | open | 06 — Turnkey connection banner |
-| `07-branding-header` | open | 07 — Branding header |
-| `08-single-exe-packaging` | open | 08 — Single-exe packaging |
+| `01-backend-skeleton-config-store-proxy` | done | 01 — Backend skeleton, local config store, injection proxy |
+| `02-single-widget-injection-loop` | done | 02 — Single-widget injection loop |
+| `03-multi-widget-grid-queue` | done | 03 — Multi-widget grid and injection queue |
+| `04-session-persistence-localstorage` | done | 04 — Session persistence via localStorage |
+| `05-script-templates` | done | 05 — Script templates |
+| `06-connection-banner` | done | 06 — Turnkey connection banner |
+| `07-branding-header` | done | 07 — Branding header |
+| `08-single-exe-packaging` | done | 08 — Single-exe packaging |
 
 ## Problem Statement
 

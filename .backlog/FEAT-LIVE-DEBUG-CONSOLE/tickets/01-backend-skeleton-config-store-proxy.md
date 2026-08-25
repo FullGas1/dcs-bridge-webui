@@ -1,6 +1,6 @@
 # 01 — backend skeleton, local config store, injection proxy
 
-**Status:** open (ready-for-agent)
+**Status:** done
 
 ## What to build
 
