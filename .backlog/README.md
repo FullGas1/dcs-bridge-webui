@@ -7,4 +7,4 @@ is the hand-maintained index.
 
 | Lot | Status | Description | Branch |
 |-----|--------|-------------|--------|
-| [`FEAT-LIVE-DEBUG-CONSOLE`](FEAT-LIVE-DEBUG-CONSOLE/PRD.md) | ready-for-agent | Turnkey local web UI for live-debugging a running DCS mission through VEAF-dcs-bridge: multi-widget Lua script editors, one-at-a-time injection queue, shared script templates, single-exe distribution. | — |
+| [`FEAT-LIVE-DEBUG-CONSOLE`](FEAT-LIVE-DEBUG-CONSOLE/PRD.md) | delivered | Turnkey local web UI for live-debugging a running DCS mission through VEAF-dcs-bridge: multi-widget Lua script editors, one-at-a-time injection queue, shared script templates, single-exe distribution. | — |
