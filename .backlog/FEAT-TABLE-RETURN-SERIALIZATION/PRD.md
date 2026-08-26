@@ -1,13 +1,15 @@
 # FEAT-TABLE-RETURN-SERIALIZATION — literal Lua serialization of table injection results
 
-**Status:** ready-for-agent
+**Status:** delivered — both tickets done, all tests green (69/69, including live-Lua-executed
+round-trip verification of the wrapping, bootstrap-once behavior, and error line-number
+correction — see Further Notes).
 
 ## Tickets
 
 | Ticket | Status | Title |
 |---|---|---|
 | `01-lua-table-serializer` | done | 01 — Lua table serializer |
-| `02-injection-wrapping-and-error-line-correction` | ready | 02 — Injection wrapping, bootstrap-once, and error line-number correction |
+| `02-injection-wrapping-and-error-line-correction` | done | 02 — Injection wrapping, bootstrap-once, and error line-number correction |
 
 ## Problem Statement
 
@@ -178,3 +180,9 @@ backend/frontend parsing after the fact can recover it. See ADR 0004.
 - Verified live against a running mission during grilling (not just read from `dcs-bridge.lua`'s
   source): a table return already comes back as `table: 0x...` today, and wrapping a script in an
   extra preceding line already shifts `dcs-bridge.lua`'s reported error line by exactly +1.
+- Delivery verification: beyond the 69 passing pytest tests (15 for the serializer, the rest for
+  wrapping/correction/wiring), the wrapping and error-correction path was independently checked
+  by mimicking `dcs-bridge.lua`'s exact `loadstring(code); pcall(f)` sequence in a real `lua`
+  subprocess (not the `lua -` top-level-chunk shape, which reports errors differently) — this is
+  what proved the +1 shift and its correction actually hold under the real chunk-naming Lua uses
+  for a `loadstring`-compiled string, not just under a simplified test harness.

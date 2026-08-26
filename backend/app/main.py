@@ -13,6 +13,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 from .dcs_client import exec_lua
+from .lua_serialize import correct_error_line_numbers, wrap_injection
 from .static import resolve_frontend_dist
 from .store import Store
 
@@ -43,9 +44,13 @@ async def inject(req: InjectRequest) -> dict:
         host=conn["host"],
         port=conn["port"],
         api_key=conn["api_key"],
-        code=req.code,
+        code=wrap_injection(req.code),
         timeout=req.timeout,
     )
+    if not result.ok and result.error_type == "dcs_error" and result.message:
+        # wrap_injection() always shifts a reported error line by +1 (ADR 0004) - undo that so
+        # the user still sees the line number their own script actually has.
+        result.message = correct_error_line_numbers(result.message)
     return asdict(result)
 
 

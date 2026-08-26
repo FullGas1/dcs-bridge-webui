@@ -1,14 +1,17 @@
-"""Lua source for serializing a Lua table into a literal, re-executable Lua expression.
+"""Serializes a table return value into literal Lua, by rewriting the injected code itself.
 
-Ticket 01 of FEAT-TABLE-RETURN-SERIALIZATION (see .backlog/). This module owns only the Lua
-*source text* — it runs inside the DCS mission, not in this process. Ticket 02 embeds it into
-the preamble that wraps an injected script (see ADR 0004: the rewrite must happen before
-dcs-bridge.lua's tostring() destroys the table's structure, which this process never sees).
+ADR 0004: dcs-bridge.lua stringifies every exec result with tostring() before this process ever
+sees it, so a table's structure is already destroyed by the time a response reaches here. The
+fix has to run inside the DCS mission, before that tostring() - hence wrap_injection() rewrites
+the code sent to dcs-serve rather than post-processing its response.
 
-Every statement ends in `;` so ticket 02 can safely collapse this source onto a single physical
-line (joining with spaces, never deleting them) without gluing two tokens together - the single-
-line constraint keeps the line-number shift this preamble introduces constant and predictable.
+Every SERIALIZER_LUA statement ends in `;` so it can be safely collapsed onto a single physical
+line (joining with spaces, never deleting them) without gluing two tokens together. wrap_injection
+relies on this: everything preceding the user's own code is kept to exactly one physical line, so
+wrapping always shifts reported error line numbers by exactly +1 - correct_error_line_numbers()
+shifts them back before an error message reaches the frontend.
 """
+import re
 
 SERIALIZER_LUA = """\
 local __wuiReserved = {
@@ -104,3 +107,39 @@ end;
 # Windows checkouts of this repo normalize line endings to CRLF (core.autocrlf) - the source
 # above must stay CRLF-free regardless of how the .py file itself is stored on disk.
 SERIALIZER_LUA = SERIALIZER_LUA.replace("\r\n", "\n")
+
+# Collapsed onto one physical line (see module docstring) so it can sit ahead of the user's code
+# without disturbing the constant +1 line-number shift wrap_injection relies on.
+_SERIALIZER_ONE_LINE = " ".join(SERIALIZER_LUA.splitlines())
+
+_LINE_REF_RE = re.compile(r'(\[string "[^"]*"\]:)(\d+):')
+
+
+def wrap_injection(code: str) -> str:
+    """Builds the Lua text actually sent to dcs-serve for a widget's injection: the user's
+    `code` runs verbatim inside an immediately-invoked function; if its result is a table, the
+    bootstrapped-once serializer turns it into literal Lua before dcs-bridge.lua's tostring()
+    ever sees it. Any other return value (string/number/boolean/nil) passes through unchanged.
+
+    Everything ahead of `code` is exactly one physical line, so `code` always starts at line 2
+    of the text sent - see correct_error_line_numbers()."""
+    preamble = (
+        f"if not _G.__dcsBridgeWebuiSerialize then {_SERIALIZER_ONE_LINE} end;"
+        "local __r=(function()"
+    )
+    epilogue = (
+        '\nend)();if type(__r)=="table" then return __dcsBridgeWebuiSerialize(__r) '
+        "else return __r end"
+    )
+    return f"{preamble}\n{code}{epilogue}"
+
+
+def correct_error_line_numbers(message: str) -> str:
+    """wrap_injection() always adds exactly one line ahead of the user's own code, so a
+    dcs-bridge.lua error report (`[string "..."]:N: message`) is always off by +1 relative to
+    the line the user actually wrote. Shifts any such reference back by 1 (floored at 1) before
+    the message reaches the frontend."""
+    def _shift(m: "re.Match[str]") -> str:
+        return f"{m.group(1)}{max(int(m.group(2)) - 1, 1)}:"
+
+    return _LINE_REF_RE.sub(_shift, message)

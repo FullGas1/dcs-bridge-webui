@@ -1,6 +1,6 @@
 # 02 — Injection wrapping, bootstrap-once, and error line-number correction
 
-**Status:** ready
+**Status:** done
 
 ## What to build
 
