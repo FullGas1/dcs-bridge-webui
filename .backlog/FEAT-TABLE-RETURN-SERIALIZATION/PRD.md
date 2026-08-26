@@ -6,7 +6,7 @@
 
 | Ticket | Status | Title |
 |---|---|---|
-| `01-lua-table-serializer` | ready | 01 — Lua table serializer |
+| `01-lua-table-serializer` | done | 01 — Lua table serializer |
 | `02-injection-wrapping-and-error-line-correction` | ready | 02 — Injection wrapping, bootstrap-once, and error line-number correction |
 
 ## Problem Statement

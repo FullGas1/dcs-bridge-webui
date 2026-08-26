@@ -1,6 +1,6 @@
 # 01 — Lua table serializer
 
-**Status:** ready
+**Status:** done
 
 ## What to build
 
