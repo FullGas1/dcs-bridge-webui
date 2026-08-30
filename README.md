@@ -1,4 +1,4 @@
-# dcs-bridge-webui
+![dcs-bridge-webui banner](frontend/public/banner.jpg)
 
 A local, turnkey web UI for live-debugging a running DCS mission through
 [VEAF-dcs-bridge](https://github.com/VEAF/dcs-bridge): paste Lua snippets into on-page editors
