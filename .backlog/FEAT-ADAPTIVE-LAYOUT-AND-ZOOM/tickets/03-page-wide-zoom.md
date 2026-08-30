@@ -1,6 +1,6 @@
 # 03 — Page-wide zoom control
 
-**Status:** ready
+**Status:** done
 
 ## What to build
 

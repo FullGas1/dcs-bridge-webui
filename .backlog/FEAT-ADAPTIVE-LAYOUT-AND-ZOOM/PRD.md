@@ -1,6 +1,7 @@
 # FEAT-ADAPTIVE-LAYOUT-AND-ZOOM — dynamic sizing, independent expand, and page zoom
 
-**Status:** ready-for-agent
+**Status:** delivered — all 3 tickets done, 100/100 frontend tests green, verified live in-browser
+(including against a real DCS mission for the underlying table-return path).
 
 ## Tickets
 
@@ -8,7 +9,7 @@
 |---|---|---|
 | `01-independent-expand-per-area` | done | 01 — Independent Expand/collapse per area |
 | `02-dynamic-collapsed-height` | done | 02 — Dynamic collapsed height for the editor and the result |
-| `03-page-wide-zoom` | ready | 03 — Page-wide zoom control |
+| `03-page-wide-zoom` | done | 03 — Page-wide zoom control |
 
 ## Problem Statement
 

@@ -275,7 +275,9 @@
     border-top: 1px solid var(--border);
     padding: 6px 8px;
     font-family: var(--mono);
-    font-size: 13px;
+    /* Ticket 03: base 13px (today's default, unchanged at 100%) scaled by the same page-wide
+       zoom factor the editor uses (ZoomControl.svelte / app.css). */
+    font-size: calc(13px * var(--zoom-factor));
     overflow: auto;
     flex: none;
   }
