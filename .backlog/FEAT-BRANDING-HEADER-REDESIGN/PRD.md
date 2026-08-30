@@ -11,13 +11,16 @@ mission and see the result) at a glance.
 
 ## Solution
 
-A richer, more polished banner — still 100% original vector artwork (no real DCS World / Eagle
-Dynamics imagery, still no external image assets) — composed as two scenes meeting at a diagonal
-seam: one evoking flight (a more detailed helicopter silhouette, sky elements), the other evoking
-a tactical overview (a generic map/grid motif with position markers — not a reproduction of DCS's
-own F10 map UI). A code-to-result signal, using the existing pulsing-dot motif, visibly crosses
-the seam from the flight/code side toward the tactical side, symbolizing the injection → result
-loop that's the actual point of the tool. The app's name sits over both halves.
+A richer, more polished banner, composed as two scenes meeting at a diagonal seam: one evoking
+flight (helicopters, sky), the other evoking a tactical overview (a generic map/grid motif with
+position markers — not a reproduction of DCS's own F10 map UI), a code-injection motif crossing
+the seam between them, and the app's name plus a one-line tagline ("Injecteur Lua en ligne (temps
+réel)") over both halves.
+
+**Revised mid-implementation**: the user supplied a finished banner image (`frontend/public/
+banner.jpg`) built to this exact brief by an image-generation tool, rather than the hand-drawn
+SVG originally scoped (see Further Notes) — this PRD's decisions below reflect that image as the
+actual deliverable.
 
 ## User Stories
 
@@ -47,49 +50,50 @@ loop that's the actual point of the tool. The app's name sits over both halves.
 
 ## Implementation Decisions
 
-- **Still a single hand-drawn inline SVG** in the banner component — no `<img>`, no
-  background-image URL, no external font or icon library. Matches the component's existing
-  approach and the constraint its own existing test already enforces (see Testing Decisions).
-- **Two-scene diagonal composition**: a flight/sky scene and a tactical/map scene, meeting at a
-  vertical-ish oblique seam (not horizontal) with a soft color transition at the join — an SVG
-  gradient, not a blur filter (consistent with the project's flat, thin-stroke aesthetic; a true
-  gaussian blur would be the odd one out stylistically).
-- **The tactical scene is an invented, generic map/grid motif with a few position markers** — not
-  a redrawing of DCS's own F10 map interface. It should read as "a tactical overview," not as a
-  specific reproduction of any real DCS UI.
-- **The helicopter motif is kept and made more detailed** (not replaced by a code/terminal glyph)
-  — richer than today's thin-line silhouette, but still a silhouette/line-art treatment
-  consistent with the rest of the illustration, not a literal aircraft likeness.
-- **A signal crosses the seam**, reusing the existing pulsing-dot (`--accent`) motif from today's
-  banner, visually connecting a "code" cue on the flight/left side to the tactical/right side —
-  this is the composition's stand-in for both "code injection" (signal traveling toward the
-  mission) and "debugging feedback" (the same loop, read as injection-then-result).
-- **App name overlaid across both halves**, legible against either background.
-- **Color**: exclusively the project's existing CSS variables (`--text-h`, `--accent`,
-  `--border`, `--bg`, already dark/light-aware via `prefers-color-scheme` in `app.css`) — no new
-  hardcoded colors, no multi-color gradient that would fight the existing minimal palette.
-- **`aria-label` updated** to a faithful one-line summary of the new composition (not an
-  exhaustive description of every element).
+- **A single raster image (`frontend/public/banner.jpg`)**, not an inline SVG — the banner
+  component renders it as an `<img>` (or CSS `background-image`) rather than hand-drawn vector
+  markup. This is a deliberate departure from the component's prior "SVG only, no binary asset"
+  approach (see Further Notes) and from what its existing test previously enforced — that test is
+  updated in the same change (see Testing Decisions), not silently left to fail or bypassed.
+- **The image already contains everything the composition called for**: helicopters (flight
+  side), a generic invented tactical-map motif with position markers (map side, not a
+  reproduction of DCS's own F10 UI), a code-injection visual crossing the diagonal seam between
+  them, the app name, and a tagline. No further compositing needed.
+- **No hand-tuning of the image's internal colors for dark/light mode** — it's a fixed photo-like
+  asset, not a themeable vector; it renders the same regardless of the page's light/dark mode.
+  The surrounding component chrome (container background, spacing) still uses the project's
+  existing CSS variables.
+- **`aria-label`/`alt` updated** to a faithful one-line summary of the new composition (not an
+  exhaustive description of every element) — still no DCS World / Eagle Dynamics trademarked term
+  in that text, consistent with the existing guard test.
+- **File name and format**: saved as `banner.jpg` (a `.jfif`-suffixed save from the source tool
+  was renamed for convention and tooling compatibility — `.jfif` is a valid JPEG variant but an
+  unusual extension for a repo asset).
 
 ## Testing Decisions
 
 - This is a purely visual component with no logic — verified by live inspection in the browser
   (light and dark mode), not a pixel-rendering test.
-- Two existing tests in `BrandingHeader.test.ts` are the real guardrails here and must keep
-  passing unchanged: one asserting exactly one inline `<svg>` and zero `<img>` elements (no
-  external asset requests), and one explicitly asserting the markup never contains any DCS World
-  / Eagle Dynamics trademarked term or an image file reference (`.png`/`.jpg`/`.jpeg`) — this is
-  the automated form of the trademark-risk decision this redesign must keep honoring.
+- `BrandingHeader.test.ts`'s two existing tests are both updated, deliberately, to match the new
+  reality rather than left broken or silently bypassed:
+  - The "no external asset requests" test flips: it now asserts exactly one `<img>` (pointing at
+    the local `banner.jpg`, not a remote URL) and zero inline `<svg>`.
+  - The trademark-guard test keeps its intent but drops the now-inapplicable
+    `.png`/`.jpg`/`.jpeg` file-reference check (a local project asset referencing its own
+    filename is expected now) — it still asserts the accessible text (`alt`/`aria-label`) never
+    contains "eagle dynamics", "dcs world", or "digital combat simulator". A test can't scan
+    image *pixels* for trademark content, so this remains a text-only guard, same as before.
 - No new automated test is needed for the visual content itself.
 
 ## Out of Scope
 
-- Any real photo, screenshot, or downloaded image asset (tooling and trademark-risk constraints
-  both rule this out — see Further Notes).
+- Any image content sourced by fetching/downloading from the web during implementation (still
+  ruled out by tooling — the actual asset used was supplied directly by the user as a file, not
+  fetched by the agent).
 - A literal reproduction of DCS World's own F10 map interface.
-- Replacing the helicopter motif with a different central symbol (e.g. a terminal/code glyph as
-  the main subject) — it stays, just more detailed.
-- Any new icon library, web font, or binary asset dependency.
+- Any new icon library or web font dependency.
+- Hand-tuning the banner image itself for dark/light mode — it's a fixed asset (see
+  Implementation Decisions).
 
 ## Further Notes
 
@@ -97,9 +101,13 @@ loop that's the actual point of the tool. The app's name sits over both halves.
   grilling and declined.
 - This redesign reopens, but does not reverse, a decision already made once for this exact
   component (see its own code comment): no real DCS World / Eagle Dynamics imagery, for trademark
-  risk. What changes is the level of illustrative detail (richer, still 100% original vector
-  art), not the constraint itself — confirmed explicitly during grilling after the user's first
-  idea (blending a real helicopter photo with a real F10 map screenshot) ran into two compounding
-  blockers: no image search/fetch/edit tooling available in this session, and the F10 map
-  specifically being exactly the kind of DCS-engine-rendered UI asset the original decision
-  exists to avoid, regardless of cropping/blurring.
+  risk. The image actually used stays inside that constraint — generic military helicopters and
+  an invented tactical-map motif, no Eagle Dynamics branding or reproduction of DCS's own UI.
+- **Scope pivot mid-implementation**: grilling initially converged on a hand-drawn SVG (agent's
+  own tooling can't fetch/edit real images, and reusing a real F10 map screenshot specifically
+  was judged a trademark risk regardless of cropping/blurring — both points stand). The user then
+  supplied a finished image, generated by a separate image tool to this exact brief, as a file
+  (`frontend/public/banner.jpg`) — not fetched or edited by the agent, sidestepping the tooling
+  gap entirely, and not containing the DCS-World-specific asset (the F10 map) that was the actual
+  trademark concern. The PRD was updated in place (not superseded by a new lot) to reflect the
+  image-based implementation once the file was in hand.
