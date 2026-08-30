@@ -3,6 +3,7 @@
   import CodeMirrorEditor from './CodeMirrorEditor.svelte';
   import ExpandToggle from './ExpandToggle.svelte';
   import TemplateDropdown from './TemplateDropdown.svelte';
+  import { MAX_COLLAPSED_LINES } from './layoutConstants';
   import type { Template } from './api';
   import type { InjectionQueue, Activity, LastRun, JobHandle } from './injectionQueue';
 
@@ -32,6 +33,36 @@
   let lastRun = $state<LastRun | null>(null);
   let jobHandle: JobHandle | null = null;
   let editor: CodeMirrorEditor;
+
+  // Ticket 02 (FEAT-ADAPTIVE-LAYOUT-AND-ZOOM): collapsed-height in px for each area, or null to
+  // let CSS size it naturally to its own content (the common case, under MAX_COLLAPSED_LINES).
+  // Only applied while that area is collapsed - see the markup below.
+  let editorHeightPx = $state<number | null>(null);
+  let resultHeightPx = $state<number | null>(null);
+  let resultContainerEl: HTMLDivElement | undefined = $state();
+  let resultBodyEl: HTMLPreElement | undefined = $state();
+
+  $effect(() => {
+    const body = lastRun?.body;
+    if (body == null || !resultBodyEl || !resultContainerEl) {
+      resultHeightPx = null;
+      return;
+    }
+    const lineCount = body.split('\n').length;
+    if (lineCount <= MAX_COLLAPSED_LINES) {
+      // Natural sizing - no chrome/padding arithmetic needed or to get wrong (the status line,
+      // the container's own padding, and the result body's margin all live outside the <pre>
+      // and would otherwise have to be accounted for by hand).
+      resultHeightPx = null;
+      return;
+    }
+    // At/over the cap: derive the same chrome overhead from a real measurement of the *whole*
+    // result container, the same way the editor's own over-cap branch does - stays correct at
+    // any zoom level (ticket 03) since it's a live DOM measurement, not a hardcoded constant.
+    const lineHeight = parseFloat(getComputedStyle(resultBodyEl).lineHeight) || 16;
+    const chrome = resultContainerEl.scrollHeight - lineCount * lineHeight;
+    resultHeightPx = MAX_COLLAPSED_LINES * lineHeight + chrome;
+  });
 
   // In-page naming dialog for Memorize, rather than window.prompt(): the latter throws
   // "prompt() is not supported" in some embedded/automated browser contexts (observed live).
@@ -110,21 +141,33 @@
     <button type="button" class="close-btn" onclick={close} aria-label="Close widget">&times;</button>
   </div>
 
-  <div class="widget-editor" data-expanded={editorExpanded}>
+  <div
+    class="widget-editor"
+    data-expanded={editorExpanded}
+    style={!editorExpanded && editorHeightPx !== null
+      ? `flex: none; height: ${editorHeightPx}px;`
+      : ''}
+  >
     <CodeMirrorEditor
       bind:this={editor}
       initialValue={initialCode}
       onChange={handleChange}
       onInjectRequest={send}
+      onHeightChange={(h) => (editorHeightPx = h)}
     />
   </div>
 
-  <div class="widget-result" data-expanded={resultExpanded}>
+  <div
+    class="widget-result"
+    data-expanded={resultExpanded}
+    bind:this={resultContainerEl}
+    style={!resultExpanded && resultHeightPx !== null ? `height: ${resultHeightPx}px;` : ''}
+  >
     {#if lastRun}
       <div class="status-line" data-status={lastRun.status}>
         {lastRun.status} &mdash; {formatElapsed(lastRun.elapsedMs)}
       </div>
-      <pre class="result-body">{lastRun.body ?? ''}</pre>
+      <pre class="result-body" bind:this={resultBodyEl}>{lastRun.body ?? ''}</pre>
     {:else}
       <div class="status-line" data-status="idle">idle</div>
     {/if}
@@ -169,22 +212,10 @@
     flex-direction: column;
     overflow: hidden;
     background: var(--bg);
-    /* A real height (not just min-height) so widget-editor's flex:1 actually caps the
-       CodeMirror area - otherwise it has no ceiling to distribute against and just grows to
-       fit the whole script instead of scrolling internally. ~30 lines by default. */
-    height: 640px;
-  }
-
-  .widget[data-any-expanded='true'] {
-    /* The widget's own height must relax whenever *either* area is expanded (ticket 01,
-       FEAT-ADAPTIVE-LAYOUT-AND-ZOOM) - otherwise the widget's own `overflow: hidden` above
-       would clip an expanded area's content even though that area's own height is unbounded.
-       No cap at all: Expand means "show the *whole* content", however long that is - not a
-       bigger-but-still-bounded box (a fixed/vh-based height only ever showed a larger fixed
-       slice, e.g. 1400px capped a 300-line script to ~58 visible lines, still short of "the
-       whole script" - reported live). The grid scrolls the page for whatever doesn't fit the
-       viewport. */
-    height: auto;
+    /* No explicit height (ticket 02, FEAT-ADAPTIVE-LAYOUT-AND-ZOOM): the widget's total height
+       is just the natural sum of the editor's and the result's own heights, each independently
+       capped/dynamic (see .widget-editor / .widget-result below) or unbounded while expanded
+       (ticket 01) - nothing left for this container itself to constrain. */
   }
 
   .widget-header {
@@ -222,32 +253,36 @@
   }
 
   .widget-editor {
+    /* Collapsed height is set inline in px (ticket 02: min(lineCount, 30) x
+       view.defaultLineHeight) once CodeMirror has measured it - flex:1/min-height:0 here are
+       just the fallback for the brief window before that first measurement lands. */
     flex: 1;
     min-height: 0;
     overflow: auto;
   }
 
   .widget-editor[data-expanded='true'] {
-    /* Ticket 01: this area alone grows to its full natural size - flex:1 has nothing to
-       distribute against once unset, same reasoning as the old whole-widget expand. */
+    /* Ticket 01: this area alone grows to its full natural size, overriding any inline
+       collapsed-height style set above (the markup only applies that style while collapsed). */
     flex: none;
     height: auto;
     overflow: visible;
   }
 
   .widget-result {
+    /* Collapsed height is set inline in px (ticket 02, same formula/threshold as the editor)
+       once a result exists to measure - see the effect in the script block. */
     border-top: 1px solid var(--border);
     padding: 6px 8px;
     font-family: var(--mono);
     font-size: 13px;
     overflow: auto;
-    max-height: 8em;
     flex: none;
   }
 
   .widget-result[data-expanded='true'] {
     /* Ticket 01: independent of the editor's own expand state - see the module docstring. */
-    max-height: none;
+    height: auto;
     overflow: visible;
   }
 

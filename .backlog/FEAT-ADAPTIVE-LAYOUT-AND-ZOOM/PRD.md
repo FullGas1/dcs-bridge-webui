@@ -7,7 +7,7 @@
 | Ticket | Status | Title |
 |---|---|---|
 | `01-independent-expand-per-area` | done | 01 — Independent Expand/collapse per area |
-| `02-dynamic-collapsed-height` | ready | 02 — Dynamic collapsed height for the editor and the result |
+| `02-dynamic-collapsed-height` | done | 02 — Dynamic collapsed height for the editor and the result |
 | `03-page-wide-zoom` | ready | 03 — Page-wide zoom control |
 
 ## Problem Statement
@@ -80,15 +80,22 @@ Three changes to how a widget's editor and result use screen space:
   (`CodeMirrorEditor.svelte`'s existing `updateListener` already fires on every `docChanged` —
   this reuses that hook rather than adding a new one). The result recalculates whenever a new
   run's output replaces the previous one.
-- **Height formula uses a real measured line height, not a hardcoded ratio.** The editor reads
-  CodeMirror's own `EditorView.defaultLineHeight` — a value measured on the actually-rendered
-  instance (current font, current zoom, everything included) — rather than a fixed px-per-line
-  constant. This keeps the height calculation correct at any zoom level (see the zoom decisions
-  below) without a separate synchronization step between the two features. This calculation
-  belongs inside `CodeMirrorEditor.svelte` (it needs `view`), not derived from the raw script
-  text in `Widget.svelte`. The result (not a CodeMirror instance) uses the equivalent real,
-  computed CSS line-height of its own text element. Both use the same formula and the same
-  ~30-line cap: `height = min(lineCount, 30) × measuredLineHeight + fixed chrome (header/padding)`.
+- **Under the threshold, no explicit height is applied at all.** Natural CSS sizing already fits
+  the content exactly — an earlier attempt at always computing `lineCount × lineHeight`
+  consistently under-measured (a line-height alone doesn't cover a container's own
+  padding/margin or sibling elements like the result's status line), caught live rather than in
+  review. Only at/over the threshold is a height forced, and only then is a real measurement
+  needed at all.
+- **The forced height, when needed, is derived from a live measurement, not a hardcoded ratio.**
+  The editor reads CodeMirror's own `EditorView.defaultLineHeight` — a value measured on the
+  actually-rendered instance (current font, current zoom, everything included) — plus a "chrome"
+  offset derived from the container's own real `scrollHeight` at that moment, rather than a
+  guessed constant. This keeps the calculation correct at any zoom level (see the zoom decisions
+  below) without a separate synchronization step between the two features, and belongs inside
+  `CodeMirrorEditor.svelte` (it needs `view`), not derived from the raw script text in
+  `Widget.svelte`. The result (not a CodeMirror instance) uses the equivalent real, computed CSS
+  line-height of its own text element and its own container's `scrollHeight` for the same
+  chrome derivation.
 - **The result's fixed 8-line cap is retired in favor of the same ~30-line threshold as the
   editor.** Today the result is capped at a fixed height unrelated to the editor's threshold, and
   scrolling inside that small box is the only way to see more. That gap is closed by the new

@@ -152,6 +152,54 @@ describe('Widget', () => {
     expect(container.querySelector('.widget')?.getAttribute('data-any-expanded')).toBe('true');
   });
 
+  it('ticket 02: does not force an explicit height on a short, collapsed result', async () => {
+    injectScriptMock.mockResolvedValue({
+      ok: true, result: 'line1\nline2', error_type: null, message: null, status_code: null,
+    });
+    const { getByText, container } = render(Widget, { props: baseProps() });
+
+    await fireEvent.click(getByText('Send'));
+    await flush();
+
+    const resultEl = container.querySelector('.widget-result') as HTMLElement;
+    expect(resultEl.style.height).toBe('');
+  });
+
+  it('ticket 02: forces an explicit height on a collapsed result past the threshold', async () => {
+    // jsdom does no real layout (scrollHeight is always 0), which would otherwise make the
+    // chrome-overhead calculation go negative - an invalid CSS height jsdom silently drops,
+    // masking the behavior under test. Stubbing realistic geometry here mirrors what the real
+    // browser measurements already verified live.
+    vi.spyOn(HTMLElement.prototype, 'scrollHeight', 'get').mockReturnValue(800);
+    vi.spyOn(window, 'getComputedStyle').mockReturnValue({ lineHeight: '20px' } as CSSStyleDeclaration);
+
+    const longResult = Array.from({ length: 35 }, (_, i) => `line${i}`).join('\n');
+    injectScriptMock.mockResolvedValue({
+      ok: true, result: longResult, error_type: null, message: null, status_code: null,
+    });
+    const { getByText, container } = render(Widget, { props: baseProps() });
+
+    await fireEvent.click(getByText('Send'));
+    await flush();
+
+    const resultEl = container.querySelector('.widget-result') as HTMLElement;
+    expect(resultEl.style.height).not.toBe('');
+  });
+
+  it('ticket 02: never applies a collapsed height while the result is expanded', async () => {
+    const longResult = Array.from({ length: 35 }, (_, i) => `line${i}`).join('\n');
+    injectScriptMock.mockResolvedValue({
+      ok: true, result: longResult, error_type: null, message: null, status_code: null,
+    });
+    const { getByText, container } = render(Widget, { props: baseProps({ resultExpanded: true }) });
+
+    await fireEvent.click(getByText('Send'));
+    await flush();
+
+    const resultEl = container.querySelector('.widget-result') as HTMLElement;
+    expect(resultEl.style.height).toBe('');
+  });
+
   it('cancels its queue slot when closed while running', async () => {
     injectScriptMock.mockReturnValue(new Promise(() => {}));
     const queue = new InjectionQueue();
