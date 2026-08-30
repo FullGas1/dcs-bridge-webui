@@ -65,6 +65,6 @@ jobs:
           if ($LASTEXITCODE -eq 0) {
             gh release edit latest --repo "${{ github.repository }}" --title "Latest build" --notes "$notes"
           } else {
-            gh release create latest --repo "${{ github.repository }}" --title "Latest build" --notes "$notes" --prerelease
+            gh release create latest --repo "${{ github.repository }}" --title "Latest build" --notes "$notes"
           }
           gh release upload latest backend\dist\dcs-bridge-webui.exe --repo "${{ github.repository }}" --clobber
