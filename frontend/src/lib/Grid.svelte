@@ -11,7 +11,10 @@
   interface WidgetRecord {
     id: number;
     code: string;
-    expanded: boolean;
+    // Ticket 01 (FEAT-ADAPTIVE-LAYOUT-AND-ZOOM): independent per area, replacing the old single
+    // `expanded` flag that grew editor + result together.
+    editorExpanded: boolean;
+    resultExpanded: boolean;
   }
 
   // One shared queue for every widget on the page (ticket 03): only one injection in flight
@@ -64,8 +67,10 @@
   // An empty array IS a legitimate prior state (every widget was closed) and is respected as-is.
   let widgets = $state<WidgetRecord[]>(
     stored === null
-      ? [{ id: nextId++, code: '', expanded: false }]
-      : stored.map((w) => ({ id: w.id, code: w.code, expanded: false })),
+      ? [{ id: nextId++, code: '', editorExpanded: false, resultExpanded: false }]
+      : stored.map((w) => ({
+          id: w.id, code: w.code, editorExpanded: false, resultExpanded: false,
+        })),
   );
 
   $effect(() => {
@@ -73,16 +78,21 @@
   });
 
   function addWidget(): void {
-    widgets.push({ id: nextId++, code: '', expanded: false });
+    widgets.push({ id: nextId++, code: '', editorExpanded: false, resultExpanded: false });
   }
 
   function closeWidget(id: number): void {
     widgets = widgets.filter((w) => w.id !== id);
   }
 
-  function toggleExpand(id: number): void {
+  function toggleEditorExpand(id: number): void {
     const widget = widgets.find((w) => w.id === id);
-    if (widget) widget.expanded = !widget.expanded;
+    if (widget) widget.editorExpanded = !widget.editorExpanded;
+  }
+
+  function toggleResultExpand(id: number): void {
+    const widget = widgets.find((w) => w.id === id);
+    if (widget) widget.resultExpanded = !widget.resultExpanded;
   }
 
   function updateCode(id: number, code: string): void {
@@ -100,10 +110,12 @@
     <Widget
       number={w.id}
       {queue}
-      expanded={w.expanded}
+      editorExpanded={w.editorExpanded}
+      resultExpanded={w.resultExpanded}
       initialCode={w.code}
       onClose={() => closeWidget(w.id)}
-      onToggleExpand={() => toggleExpand(w.id)}
+      onToggleEditorExpand={() => toggleEditorExpand(w.id)}
+      onToggleResultExpand={() => toggleResultExpand(w.id)}
       onCodeChange={(code) => updateCode(w.id, code)}
       {templates}
       onSaveTemplate={handleSaveTemplate}

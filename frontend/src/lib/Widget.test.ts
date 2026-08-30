@@ -23,9 +23,11 @@ function baseProps(overrides: Partial<Record<string, unknown>> = {}) {
   return {
     number: 1,
     queue: new InjectionQueue(),
-    expanded: false,
+    editorExpanded: false,
+    resultExpanded: false,
     onClose: vi.fn(),
-    onToggleExpand: vi.fn(),
+    onToggleEditorExpand: vi.fn(),
+    onToggleResultExpand: vi.fn(),
     templates: sampleTemplates,
     onSaveTemplate: vi.fn(),
     onDeleteTemplate: vi.fn(),
@@ -105,18 +107,97 @@ describe('Widget', () => {
     expect(onClose).toHaveBeenCalledOnce();
   });
 
-  it('calls onToggleExpand when the expand button is clicked, and reflects the expanded prop', async () => {
-    const onToggleExpand = vi.fn();
+  it('expands only the editor when its own Expand button is clicked, leaving the result alone', async () => {
+    const onToggleEditorExpand = vi.fn();
     const { getByText, container, rerender } = render(Widget, {
-      props: baseProps({ onToggleExpand, expanded: false }),
+      props: baseProps({ onToggleEditorExpand, editorExpanded: false, resultExpanded: false }),
     });
 
-    await fireEvent.click(getByText('Expand'));
-    expect(onToggleExpand).toHaveBeenCalledOnce();
+    await fireEvent.click(getByText('Expand Editor'));
+    expect(onToggleEditorExpand).toHaveBeenCalledOnce();
 
-    await rerender(baseProps({ onToggleExpand, expanded: true }));
-    expect(container.querySelector('[data-expanded="true"]')).not.toBeNull();
-    expect(getByText('Collapse')).toBeInTheDocument();
+    await rerender(baseProps({ onToggleEditorExpand, editorExpanded: true, resultExpanded: false }));
+    const editorEl = container.querySelector('.widget-editor');
+    const resultEl = container.querySelector('.widget-result');
+    expect(editorEl?.getAttribute('data-expanded')).toBe('true');
+    expect(resultEl?.getAttribute('data-expanded')).toBe('false');
+    expect(getByText('Collapse Editor')).toBeInTheDocument();
+    expect(getByText('Expand Result')).toBeInTheDocument();
+  });
+
+  it('expands only the result when its own Expand button is clicked, leaving the editor alone', async () => {
+    const onToggleResultExpand = vi.fn();
+    const { getByText, container, rerender } = render(Widget, {
+      props: baseProps({ onToggleResultExpand, editorExpanded: false, resultExpanded: false }),
+    });
+
+    await fireEvent.click(getByText('Expand Result'));
+    expect(onToggleResultExpand).toHaveBeenCalledOnce();
+
+    await rerender(baseProps({ onToggleResultExpand, editorExpanded: false, resultExpanded: true }));
+    const editorEl = container.querySelector('.widget-editor');
+    const resultEl = container.querySelector('.widget-result');
+    expect(editorEl?.getAttribute('data-expanded')).toBe('false');
+    expect(resultEl?.getAttribute('data-expanded')).toBe('true');
+    expect(getByText('Collapse Result')).toBeInTheDocument();
+    expect(getByText('Expand Editor')).toBeInTheDocument();
+  });
+
+  it('marks the widget itself as expanded when either area is expanded', async () => {
+    const { container, rerender } = render(Widget, { props: baseProps() });
+
+    expect(container.querySelector('.widget')?.getAttribute('data-any-expanded')).toBe('false');
+
+    await rerender(baseProps({ editorExpanded: true }));
+    expect(container.querySelector('.widget')?.getAttribute('data-any-expanded')).toBe('true');
+  });
+
+  it('ticket 02: does not force an explicit height on a short, collapsed result', async () => {
+    injectScriptMock.mockResolvedValue({
+      ok: true, result: 'line1\nline2', error_type: null, message: null, status_code: null,
+    });
+    const { getByText, container } = render(Widget, { props: baseProps() });
+
+    await fireEvent.click(getByText('Send'));
+    await flush();
+
+    const resultEl = container.querySelector('.widget-result') as HTMLElement;
+    expect(resultEl.style.height).toBe('');
+  });
+
+  it('ticket 02: forces an explicit height on a collapsed result past the threshold', async () => {
+    // jsdom does no real layout (scrollHeight is always 0), which would otherwise make the
+    // chrome-overhead calculation go negative - an invalid CSS height jsdom silently drops,
+    // masking the behavior under test. Stubbing realistic geometry here mirrors what the real
+    // browser measurements already verified live.
+    vi.spyOn(HTMLElement.prototype, 'scrollHeight', 'get').mockReturnValue(800);
+    vi.spyOn(window, 'getComputedStyle').mockReturnValue({ lineHeight: '20px' } as CSSStyleDeclaration);
+
+    const longResult = Array.from({ length: 35 }, (_, i) => `line${i}`).join('\n');
+    injectScriptMock.mockResolvedValue({
+      ok: true, result: longResult, error_type: null, message: null, status_code: null,
+    });
+    const { getByText, container } = render(Widget, { props: baseProps() });
+
+    await fireEvent.click(getByText('Send'));
+    await flush();
+
+    const resultEl = container.querySelector('.widget-result') as HTMLElement;
+    expect(resultEl.style.height).not.toBe('');
+  });
+
+  it('ticket 02: never applies a collapsed height while the result is expanded', async () => {
+    const longResult = Array.from({ length: 35 }, (_, i) => `line${i}`).join('\n');
+    injectScriptMock.mockResolvedValue({
+      ok: true, result: longResult, error_type: null, message: null, status_code: null,
+    });
+    const { getByText, container } = render(Widget, { props: baseProps({ resultExpanded: true }) });
+
+    await fireEvent.click(getByText('Send'));
+    await flush();
+
+    const resultEl = container.querySelector('.widget-result') as HTMLElement;
+    expect(resultEl.style.height).toBe('');
   });
 
   it('cancels its queue slot when closed while running', async () => {

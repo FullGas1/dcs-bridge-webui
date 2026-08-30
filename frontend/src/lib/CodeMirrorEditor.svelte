@@ -5,15 +5,25 @@
   import { basicSetup } from 'codemirror';
   import { StreamLanguage } from '@codemirror/language';
   import { lua } from '@codemirror/legacy-modes/mode/lua';
+  import { MAX_COLLAPSED_LINES } from './layoutConstants';
 
   interface Props {
     initialValue: string;
     onChange: (value: string) => void;
     onFocus?: () => void;
     onInjectRequest?: () => void;
+    // Ticket 02 (FEAT-ADAPTIVE-LAYOUT-AND-ZOOM): reports the height the editor's *collapsed*
+    // container should be constrained to, or null to let it size naturally to its own content
+    // (the common case, under MAX_COLLAPSED_LINES - no computation needed, and no risk of
+    // under/over-estimating chrome that doesn't belong to a single line, like CodeMirror's own
+    // top/bottom content padding). Only at/over the threshold is an explicit px height reported.
+    // Computed here (not from Widget.svelte's raw script text) because it needs
+    // `view.defaultLineHeight`, a value measured on the actually-rendered instance (current
+    // font/zoom), not a hardcoded px-per-line ratio.
+    onHeightChange?: (px: number | null) => void;
   }
 
-  let { initialValue, onChange, onFocus, onInjectRequest }: Props = $props();
+  let { initialValue, onChange, onFocus, onInjectRequest, onHeightChange }: Props = $props();
 
   // Read once, deliberately: this editor is uncontrolled after mount (see setValue() for the
   // imperative escape hatch templates use) so typing doesn't fight a reactive prop.
@@ -23,6 +33,25 @@
   let view: EditorView | undefined;
 
   $effect(() => {
+    function reportHeight(): void {
+      if (!view) return;
+      const lineCount = view.state.doc.lines;
+      if (lineCount <= MAX_COLLAPSED_LINES) {
+        // Natural sizing - no chrome/padding arithmetic needed or to get wrong.
+        onHeightChange?.(null);
+        return;
+      }
+      // At/over the cap: derive the chrome overhead (CodeMirror's own top/bottom content
+      // padding, gutter, etc.) from a real measurement instead of guessing a constant. Measuring
+      // `container` itself (not view.contentDOM or view.contentHeight) captures CodeMirror's
+      // *entire* rendered chrome, whichever internal layer happens to carry it. .scrollHeight
+      // also forces the browser to complete any pending layout before returning, unlike
+      // view.contentHeight which can read stale (observed live).
+      const fullContentHeight = container?.scrollHeight ?? 0;
+      const chrome = fullContentHeight - lineCount * view.defaultLineHeight;
+      onHeightChange?.(MAX_COLLAPSED_LINES * view.defaultLineHeight + chrome);
+    }
+
     view = new EditorView({
       doc: initial,
       parent: container,
@@ -45,6 +74,7 @@
         EditorView.updateListener.of((update) => {
           if (update.docChanged) {
             onChange(update.state.doc.toString());
+            reportHeight();
           }
           if (update.focusChanged && update.view.hasFocus) {
             onFocus?.();
@@ -52,6 +82,10 @@
         }),
       ],
     });
+
+    // Initial report so the container is correctly sized before the user's first edit, not just
+    // after it.
+    reportHeight();
 
     return () => view?.destroy();
   });
