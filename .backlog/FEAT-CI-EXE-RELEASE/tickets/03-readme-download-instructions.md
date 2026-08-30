@@ -1,6 +1,6 @@
 # 03 — README: direct download link + build-from-source as fallback
 
-**Status:** ready
+**Status:** done
 
 ## Parent
 
@@ -16,12 +16,13 @@ on every merge to `master`.
 
 ## Acceptance criteria
 
-- [ ] The direct download link appears first in "Getting the app," before the build-from-source
+- [x] The direct download link appears first in "Getting the app," before the build-from-source
       instructions.
-- [ ] A short sentence explains the exe is rebuilt/republished automatically on every merge.
-- [ ] Build-from-source instructions are preserved, unchanged in substance, as the secondary path.
-- [ ] The download link actually resolves to a real asset (verified once ticket 02's workflow has
-      run at least once on `master`).
+- [x] A short sentence explains the exe is rebuilt/republished automatically on every merge.
+- [x] Build-from-source instructions are preserved, unchanged in substance, as the secondary path.
+- [x] The download link actually resolves to a real asset (verified once ticket 02's workflow has
+      run at least once on `master` - confirmed via the GitHub API after the prerelease fix,
+      see ticket 02's post-merge finding).
 
 ## Blocked by
 

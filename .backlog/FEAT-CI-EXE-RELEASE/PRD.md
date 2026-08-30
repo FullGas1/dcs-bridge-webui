@@ -1,14 +1,14 @@
 # FEAT-CI-EXE-RELEASE — a always-fresh, directly downloadable exe
 
-**Status:** ready-for-agent
+**Status:** delivered
 
 ## Tickets
 
 | Ticket | Status | Title |
 |---|---|---|
-| `01-self-sufficient-build-script` | ready | 01 — Make `build_exe.ps1` create its own venv |
-| `02-ci-build-and-release-workflow` | ready | 02 — CI workflow: test, build, and publish the exe on every merge |
-| `03-readme-download-instructions` | ready | 03 — README: direct download link + build-from-source as a fallback |
+| `01-self-sufficient-build-script` | done | 01 — Make `build_exe.ps1` create its own venv |
+| `02-ci-build-and-release-workflow` | done | 02 — CI workflow: test, build, and publish the exe on every merge |
+| `03-readme-download-instructions` | done | 03 — README: direct download link + build-from-source as a fallback |
 
 ## Problem Statement
 
@@ -130,3 +130,10 @@ secondary option for contributors.
   surfaced that it also fixes a pre-existing, real onboarding failure for any external contributor
   — folded into this lot rather than spun out separately, since it's the same one-line root cause
   (`build_exe.ps1` assuming a venv that nothing creates).
+- **Post-merge finding**: the first real CI run created the `latest` release with `--prerelease`,
+  which silently breaks GitHub's `/releases/latest` redirect — the exact mechanism the README's
+  stable download link depends on (prereleases are excluded from "latest" by GitHub itself, so the
+  link 404'd despite the release and asset existing). Caught immediately by verifying the actual
+  API response rather than assuming success from a green workflow run; fixed in a same-day
+  follow-up PR (both the workflow and the already-published release) and reverified via the
+  GitHub API before considering this lot done.

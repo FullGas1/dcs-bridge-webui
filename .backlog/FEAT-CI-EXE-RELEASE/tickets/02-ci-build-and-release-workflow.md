@@ -1,6 +1,6 @@
 # 02 — CI workflow: test, build, and publish the exe on every merge
 
-**Status:** ready
+**Status:** done
 
 ## Parent
 
@@ -27,14 +27,23 @@ If either test step fails, the workflow stops — no build, no publish.
 
 ## Acceptance criteria
 
-- [ ] A push to `master` triggers the workflow automatically; a push to any other branch does not.
-- [ ] A failing frontend test, type-check, or backend pytest run stops the workflow before any
+- [x] A push to `master` triggers the workflow automatically; a push to any other branch does not.
+- [x] A failing frontend test, type-check, or backend pytest run stops the workflow before any
       build or publish step runs.
-- [ ] On success, `https://github.com/FullGas1/dcs-bridge-webui/releases/latest/download/dcs-bridge-webui.exe`
+- [x] On success, `https://github.com/FullGas1/dcs-bridge-webui/releases/latest/download/dcs-bridge-webui.exe`
       serves the freshly built exe.
-- [ ] The `latest` release's notes/body identify the commit (SHA and/or date) the build came from.
-- [ ] Re-running the workflow on a later merge replaces the previous asset rather than
+- [x] The `latest` release's notes/body identify the commit (SHA and/or date) the build came from.
+- [x] Re-running the workflow on a later merge replaces the previous asset rather than
       accumulating additional releases or assets.
+
+## Post-merge finding
+
+The first real run created the `latest` release with `--prerelease`, which silently breaks
+GitHub's `/releases/latest` redirect (prereleases are excluded from "latest" by GitHub itself) -
+the download link didn't actually resolve. Fixed immediately (both the workflow's
+`gh release create` call and the already-published release) - see the follow-up PR
+[#8](https://github.com/FullGas1/dcs-bridge-webui/pull/8). Confirmed via the GitHub API on the
+very next run that `/releases/latest` now correctly returns this release.
 
 ## Blocked by
 
