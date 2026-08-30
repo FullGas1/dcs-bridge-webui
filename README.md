@@ -30,16 +30,19 @@ side of the connection running:
 
 ## Getting the app
 
-There's no published release yet — no CI/release pipeline builds and attaches the exe to a
-GitHub Release, so building from source is the only way to get it for now:
+**[Download the latest build](https://github.com/FullGas1/dcs-bridge-webui/releases/latest/download/dcs-bridge-webui.exe)**
+— a single file, nothing else to install (no Python/Node needed to *run* it, only to build it).
+It's automatically rebuilt and republished from `master` on every merge, so this link always
+points at the newest version that passed the full test suite.
+
+Prefer building it yourself, or want to develop against the source? Build from source instead:
 
 ```bash
 powershell -ExecutionPolicy Bypass -File backend\build_exe.ps1
 ```
 
-This produces `backend\dist\dcs-bridge-webui.exe` — a single file, nothing else to install
-(no Python/Node needed to *run* it, only to build it). For frontend development instead of a
-packaged build, see [frontend/README.md](frontend/README.md).
+This produces `backend\dist\dcs-bridge-webui.exe`. For frontend development instead of a packaged
+build, see [frontend/README.md](frontend/README.md).
 
 ## Running it
 

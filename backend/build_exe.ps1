@@ -7,7 +7,8 @@ $ErrorActionPreference = "Stop"
 $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $repoRoot  = Split-Path -Parent $scriptDir
 $frontend  = Join-Path $repoRoot "frontend"
-$venvPy    = Join-Path $scriptDir "venv\Scripts\python.exe"
+$venvDir   = Join-Path $scriptDir "venv"
+$venvPy    = Join-Path $venvDir "Scripts\python.exe"
 
 Write-Host "Building frontend..."
 Push-Location $frontend
@@ -16,6 +17,13 @@ try {
     npm run build
 } finally {
     Pop-Location
+}
+
+if (-not (Test-Path $venvPy)) {
+    Write-Host "No venv found at $venvDir - creating one..."
+    python -m venv $venvDir
+    Write-Host "Installing runtime dependencies into the new venv..."
+    & $venvPy -m pip install -r (Join-Path $scriptDir "requirements.txt") --quiet
 }
 
 Write-Host "Installing PyInstaller into the backend venv..."
