@@ -1,0 +1,70 @@
+name: Build and release exe
+
+# FEAT-CI-EXE-RELEASE: every push to master (i.e. every merged PR - direct commits to master
+# aren't allowed in this project) runs the full test suite as a blocking gate, then - only if it
+# passes - builds the packaged exe and publishes it to a single rolling "latest" GitHub Release,
+# so the download link never changes.
+on:
+  push:
+    branches: [master]
+
+permissions:
+  contents: write # needed to create/update the "latest" release and upload its asset
+
+jobs:
+  build-and-release:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: "npm"
+          cache-dependency-path: frontend/package-lock.json
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: npm install
+
+      - name: Run frontend tests
+        working-directory: frontend
+        run: npm test
+
+      - name: Frontend type-check
+        working-directory: frontend
+        run: npm run check
+
+      - name: Set up backend venv
+        working-directory: backend
+        run: |
+          python -m venv venv
+          venv\Scripts\python.exe -m pip install -r requirements.txt
+
+      - name: Run backend tests
+        working-directory: backend
+        run: venv\Scripts\python.exe -m pytest tests
+
+      - name: Build the exe
+        # build_exe.ps1 sees the venv already created above and skips straight to installing
+        # requirements-build.txt (PyInstaller) - same script a human runs locally, unmodified.
+        run: powershell -ExecutionPolicy Bypass -File backend\build_exe.ps1
+
+      - name: Publish the rolling "latest" release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $sha = "${{ github.sha }}".Substring(0, 7)
+          $date = Get-Date -AsUTC -Format "yyyy-MM-dd HH:mm 'UTC'"
+          $notes = "Automatically built from commit $sha on $date."
+          gh release view latest --repo "${{ github.repository }}" 2>$null
+          if ($LASTEXITCODE -eq 0) {
+            gh release edit latest --repo "${{ github.repository }}" --title "Latest build" --notes "$notes"
+          } else {
+            gh release create latest --repo "${{ github.repository }}" --title "Latest build" --notes "$notes" --prerelease
+          }
+          gh release upload latest backend\dist\dcs-bridge-webui.exe --repo "${{ github.repository }}" --clobber
