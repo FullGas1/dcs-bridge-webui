@@ -30,8 +30,8 @@ side of the connection running:
 
 ## Getting the app
 
-There's no published release (this project has no GitHub remote — it's local-only). Build it
-from source:
+There's no published release yet — no CI/release pipeline builds and attaches the exe to a
+GitHub Release, so building from source is the only way to get it for now:
 
 ```bash
 powershell -ExecutionPolicy Bypass -File backend\build_exe.ps1
