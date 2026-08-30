@@ -6,7 +6,7 @@
 
 | Ticket | Status | Title |
 |---|---|---|
-| `01-independent-expand-per-area` | ready | 01 — Independent Expand/collapse per area |
+| `01-independent-expand-per-area` | done | 01 — Independent Expand/collapse per area |
 | `02-dynamic-collapsed-height` | ready | 02 — Dynamic collapsed height for the editor and the result |
 | `03-page-wide-zoom` | ready | 03 — Page-wide zoom control |
 

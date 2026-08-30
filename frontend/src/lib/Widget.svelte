@@ -1,6 +1,7 @@
 <script lang="ts">
   import { untrack } from 'svelte';
   import CodeMirrorEditor from './CodeMirrorEditor.svelte';
+  import ExpandToggle from './ExpandToggle.svelte';
   import TemplateDropdown from './TemplateDropdown.svelte';
   import type { Template } from './api';
   import type { InjectionQueue, Activity, LastRun, JobHandle } from './injectionQueue';
@@ -8,9 +9,11 @@
   interface Props {
     number: number;
     queue: InjectionQueue;
-    expanded: boolean;
+    editorExpanded: boolean;
+    resultExpanded: boolean;
     onClose: () => void;
-    onToggleExpand: () => void;
+    onToggleEditorExpand: () => void;
+    onToggleResultExpand: () => void;
     initialCode?: string;
     onCodeChange?: (code: string) => void;
     templates: Template[];
@@ -18,8 +21,9 @@
     onDeleteTemplate: (id: string) => void;
   }
   let {
-    number, queue, expanded, onClose, onToggleExpand, initialCode = '', onCodeChange,
-    templates, onSaveTemplate, onDeleteTemplate,
+    number, queue, editorExpanded, resultExpanded, onClose, onToggleEditorExpand,
+    onToggleResultExpand, initialCode = '', onCodeChange, templates, onSaveTemplate,
+    onDeleteTemplate,
   }: Props = $props();
 
   // Seeded once from the prop, then independently editable - not a live mirror of it.
@@ -89,7 +93,7 @@
   }
 </script>
 
-<div class="widget" data-expanded={expanded}>
+<div class="widget" data-any-expanded={editorExpanded || resultExpanded}>
   <div class="widget-header">
     <span class="widget-number">Widget {number}</span>
     <span
@@ -99,13 +103,14 @@
     ></span>
     <button type="button" onclick={send} disabled={activity !== 'idle'}>Send</button>
     <button type="button" onclick={stop} disabled={activity === 'idle'}>Stop</button>
-    <button type="button" onclick={onToggleExpand}>{expanded ? 'Collapse' : 'Expand'}</button>
+    <ExpandToggle expanded={editorExpanded} onToggle={onToggleEditorExpand} area="Editor" />
+    <ExpandToggle expanded={resultExpanded} onToggle={onToggleResultExpand} area="Result" />
     <button type="button" onclick={memorize}>Memorize</button>
     <TemplateDropdown {templates} onSelect={loadTemplate} onDelete={onDeleteTemplate} />
     <button type="button" class="close-btn" onclick={close} aria-label="Close widget">&times;</button>
   </div>
 
-  <div class="widget-editor">
+  <div class="widget-editor" data-expanded={editorExpanded}>
     <CodeMirrorEditor
       bind:this={editor}
       initialValue={initialCode}
@@ -114,7 +119,7 @@
     />
   </div>
 
-  <div class="widget-result">
+  <div class="widget-result" data-expanded={resultExpanded}>
     {#if lastRun}
       <div class="status-line" data-status={lastRun.status}>
         {lastRun.status} &mdash; {formatElapsed(lastRun.elapsedMs)}
@@ -170,14 +175,15 @@
     height: 640px;
   }
 
-  .widget[data-expanded='true'] {
-    /* No height cap at all: Expand means "show the *whole* script", however many lines that
-       is - not a bigger-but-still-bounded box (a fixed/vh-based height only ever showed a
-       larger fixed slice, e.g. 1400px capped a 300-line script to ~58 visible lines, still
-       short of "the whole script" - reported live). With no height here, widget-editor's
-       flex:1 has nothing to distribute against and CodeMirror renders at its full natural
-       size instead of scrolling internally; the grid (ticket 03) scrolls the page for
-       whatever doesn't fit the viewport. */
+  .widget[data-any-expanded='true'] {
+    /* The widget's own height must relax whenever *either* area is expanded (ticket 01,
+       FEAT-ADAPTIVE-LAYOUT-AND-ZOOM) - otherwise the widget's own `overflow: hidden` above
+       would clip an expanded area's content even though that area's own height is unbounded.
+       No cap at all: Expand means "show the *whole* content", however long that is - not a
+       bigger-but-still-bounded box (a fixed/vh-based height only ever showed a larger fixed
+       slice, e.g. 1400px capped a 300-line script to ~58 visible lines, still short of "the
+       whole script" - reported live). The grid scrolls the page for whatever doesn't fit the
+       viewport. */
     height: auto;
   }
 
@@ -221,6 +227,14 @@
     overflow: auto;
   }
 
+  .widget-editor[data-expanded='true'] {
+    /* Ticket 01: this area alone grows to its full natural size - flex:1 has nothing to
+       distribute against once unset, same reasoning as the old whole-widget expand. */
+    flex: none;
+    height: auto;
+    overflow: visible;
+  }
+
   .widget-result {
     border-top: 1px solid var(--border);
     padding: 6px 8px;
@@ -229,6 +243,12 @@
     overflow: auto;
     max-height: 8em;
     flex: none;
+  }
+
+  .widget-result[data-expanded='true'] {
+    /* Ticket 01: independent of the editor's own expand state - see the module docstring. */
+    max-height: none;
+    overflow: visible;
   }
 
   .status-line[data-status='success'] {

@@ -1,6 +1,6 @@
 # 01 — Independent Expand/collapse per area
 
-**Status:** ready
+**Status:** done
 
 ## What to build
 
