@@ -7,21 +7,22 @@ afterEach(() => {
 });
 
 describe('BrandingHeader', () => {
-  it('renders one image conveying the app, with no external asset requests', () => {
-    const { getByRole, container } = render(BrandingHeader);
-
-    expect(getByRole('img')).toBeInTheDocument();
-    // Hand-drawn inline SVG only - no <img src>, no background-image url(), nothing to fetch.
-    expect(container.querySelectorAll('svg')).toHaveLength(1);
-    expect(container.querySelectorAll('img')).toHaveLength(0);
-  });
-
-  it('does not reference any DCS World / Eagle Dynamics trademarked asset', () => {
+  it('renders one local image conveying the app, no inline SVG left over', () => {
     const { container } = render(BrandingHeader);
 
-    const markup = container.innerHTML.toLowerCase();
-    for (const term of ['eagle dynamics', 'dcs world', '.png', '.jpg', '.jpeg', 'digital combat simulator']) {
-      expect(markup).not.toContain(term);
+    const images = container.querySelectorAll('img');
+    expect(images).toHaveLength(1);
+    expect(images[0]!.getAttribute('src')).toBe('/banner.jpg');
+    expect(container.querySelectorAll('svg')).toHaveLength(0);
+  });
+
+  it('does not reference any DCS World / Eagle Dynamics trademarked term in its accessible text', () => {
+    const { container } = render(BrandingHeader);
+
+    const img = container.querySelector('img')!;
+    const accessibleText = (img.getAttribute('alt') ?? '').toLowerCase();
+    for (const term of ['eagle dynamics', 'dcs world', 'digital combat simulator']) {
+      expect(accessibleText).not.toContain(term);
     }
   });
 });
