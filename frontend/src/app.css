@@ -4,8 +4,8 @@
   /* FEAT-PAGE-SURFACE-CONTRAST: split so the page recedes and every card-like surface (widgets,
      dialogs, dropdowns, the floating zoom control) pops forward - see each file's own usage for
      which one applies. */
-  --bg-page: #4b5563;
-  --bg-surface: #fff;
+  --bg-page: #3c444f;
+  --bg-surface: #c1c4c8;
   --border: #d8d8de;
   --accent: #aa3bff;
 

@@ -52,18 +52,23 @@ forward, in both light and dark mode.
   - `.zoom-control` (`ZoomControl.svelte`, the floating zoom control) → `--bg-surface`.
   - The banner (`BrandingHeader.svelte`) has no background of its own (just the image) — not
     affected either way.
-- **Values** (final, after live tuning against the running app — see below):
-  - Light mode: `--bg-page` = `#4b5563` (darker than the first swatch-matched attempt,
-    `#e5e7eb` — the user asked for this deeper gray directly against a live render, "sans prd" per
-    the standing exception for tuning an already-approved PRD's placeholder values);
-    `--bg-surface` = `#fff` (unchanged from today's single `--bg`).
+- **Values** (final, after several rounds of live tuning against the running app — see below):
+  - Light mode: `--bg-page` = `#3c444f` (a dark slate gray — the user iterated through several
+    intermediate values, both directions, directly against a live render, "sans prd" per the
+    standing exception for tuning an already-approved PRD's placeholder values); `--bg-surface` =
+    `#c1c4c8` (a mid-gray, no longer pure white — the user asked for widgets to read as "a bit
+    lighter than the page" rather than a stark white-on-gray jump, then tuned the exact shade
+    live through several steps: lighter, then back, then darker, until it read right against the
+    final page tone).
   - Dark mode: `--bg-page` = `#0d0e12` (darker than today's single dark value, so the page still
     recedes relative to surfaces); `--bg-surface` = `#22242e` (lightened from the first attempt,
     `#16171d` — the user liked widgets a bit lighter against the dark page, confirmed live, same
     "sans prd" exception).
-  - Both values were confirmed against a live render (light and dark) during implementation, with
-    two direct follow-up tweaks from the user after seeing the first live render — not a
-    pixel-perfect match to the original swatch, by design.
+  - All values were confirmed against a live render (light and dark) during implementation, with
+    several direct follow-up tweaks from the user after seeing each render — not a pixel-perfect
+    match to any original swatch, by design. The light-mode principle converged onto the same
+    "surface a bit lighter than page" relationship dark mode already had, rather than light mode's
+    earlier white-surface/gray-page high-contrast pairing.
 - **Symmetric across both modes** — the "page recedes, surface pops" principle applies the same
   way in dark mode as in light mode, even though the user's original request only mentioned light
   mode explicitly (confirmed during grilling: dark mode should not be left as a flat, unchanged

@@ -20,8 +20,10 @@ Reclassify every current `var(--bg)` usage (audited directly, not assumed):
 | `TemplateDropdown.svelte` | the dropdown list | `--bg-surface` |
 | `ZoomControl.svelte` | `.zoom-control` | `--bg-surface` |
 
-Final values (tuned live against the running app, both modes):
-- Light: `--bg-page: #4b5563`, `--bg-surface: #fff` (unchanged from today's single value).
+Final values (tuned live against the running app, both modes, through several rounds of direct
+feedback):
+- Light: `--bg-page: #3c444f`, `--bg-surface: #c1c4c8` (a mid-gray, not the original white — the
+  user settled on "surface a bit lighter than page," the same relationship dark mode already had).
 - Dark: `--bg-page: #0d0e12`, `--bg-surface: #22242e`.
 
 Addendum, same branch: CodeMirror's default `.cm-activeLine` background (a pale cyan-blue tint)
