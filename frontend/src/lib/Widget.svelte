@@ -211,7 +211,7 @@
     display: flex;
     flex-direction: column;
     overflow: hidden;
-    background: var(--bg);
+    background: var(--bg-surface);
     /* No explicit height (ticket 02, FEAT-ADAPTIVE-LAYOUT-AND-ZOOM): the widget's total height
        is just the natural sum of the editor's and the result's own heights, each independently
        capped/dynamic (see .widget-editor / .widget-result below) or unbounded while expanded
@@ -313,7 +313,7 @@
   }
 
   .naming-dialog {
-    background: var(--bg);
+    background: var(--bg-surface);
     border: 1px solid var(--border);
     border-radius: 8px;
     padding: 16px;
@@ -328,7 +328,7 @@
     padding: 6px 8px;
     border: 1px solid var(--border);
     border-radius: 4px;
-    background: var(--bg);
+    background: var(--bg-surface);
     color: var(--text-h);
   }
 

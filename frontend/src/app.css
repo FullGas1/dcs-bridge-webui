@@ -1,7 +1,11 @@
 :root {
   --text: #2b2b2b;
   --text-h: #08060d;
-  --bg: #fff;
+  /* FEAT-PAGE-SURFACE-CONTRAST: split so the page recedes and every card-like surface (widgets,
+     dialogs, dropdowns, the floating zoom control) pops forward - see each file's own usage for
+     which one applies. */
+  --bg-page: #3c444f;
+  --bg-surface: #c1c4c8;
   --border: #d8d8de;
   --accent: #aa3bff;
 
@@ -16,14 +20,15 @@
   font: 16px/145% var(--sans);
   color-scheme: light dark;
   color: var(--text);
-  background: var(--bg);
+  background: var(--bg-page);
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
     --text: #d6d6da;
     --text-h: #f3f4f6;
-    --bg: #16171d;
+    --bg-page: #0d0e12;
+    --bg-surface: #22242e;
     --border: #2e303a;
     --accent: #c084fc;
   }
@@ -56,7 +61,7 @@ main {
 button {
   font: inherit;
   border: 1px solid var(--border);
-  background: var(--bg);
+  background: var(--bg-surface);
   color: var(--text-h);
   border-radius: 4px;
   padding: 4px 10px;
@@ -85,4 +90,11 @@ button:disabled {
 }
 .cm-editor-container .cm-scroller {
   overflow: auto;
+}
+
+/* CodeMirror's default active-line highlight is a pale blue tint meant for a light editor
+   background - it washes out syntax-highlighted token colors in dark mode. A neutral gray tint
+   at low opacity keeps the line visible without fighting any token color, in either theme. */
+.cm-editor-container .cm-activeLine {
+  background-color: rgba(128, 128, 128, 0.15);
 }
