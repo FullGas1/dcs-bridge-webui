@@ -10,6 +10,11 @@ A self-contained unit in the page grid: a Lua script editor (CodeMirror) paired 
 of its last injection. The primary unit of interaction — the user works with several at once.
 _Avoid_: Panel, pane, editor (on its own — "editor" is just the CodeMirror part of a widget).
 
+**Result**:
+The part of a widget showing the outcome of its last injection — status, elapsed time, and (on
+success) the returned value. Not a CodeMirror instance; a plain text area.
+_Avoid_: Return, returns, output, response, panel, pane, window.
+
 **Injection**:
 Sending a widget's script to `dcs-serve`'s `/api/exec` for execution in the live DCS mission,
 triggered by the widget's send button or Ctrl+Enter while it has keyboard focus.
