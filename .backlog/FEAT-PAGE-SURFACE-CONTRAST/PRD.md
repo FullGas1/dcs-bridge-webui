@@ -1,12 +1,12 @@
 # FEAT-PAGE-SURFACE-CONTRAST — a page background distinct from widget/surface backgrounds
 
-**Status:** ready-for-agent
+**Status:** delivered
 
 ## Tickets
 
 | Ticket | Status | Title |
 |---|---|---|
-| `01-split-bg-page-and-bg-surface` | ready | 01 — Split `--bg` into `--bg-page` and `--bg-surface` |
+| `01-split-bg-page-and-bg-surface` | done | 01 — Split `--bg` into `--bg-page` and `--bg-surface` |
 
 ## Problem Statement
 
@@ -52,15 +52,18 @@ forward, in both light and dark mode.
   - `.zoom-control` (`ZoomControl.svelte`, the floating zoom control) → `--bg-surface`.
   - The banner (`BrandingHeader.svelte`) has no background of its own (just the image) — not
     affected either way.
-- **Values**:
-  - Light mode: `--bg-page` = `#e5e7eb` (a light gray, close to the reference swatch the user
-    provided during grilling); `--bg-surface` = `#fff` (unchanged from today's single `--bg`).
+- **Values** (final, after live tuning against the running app — see below):
+  - Light mode: `--bg-page` = `#4b5563` (darker than the first swatch-matched attempt,
+    `#e5e7eb` — the user asked for this deeper gray directly against a live render, "sans prd" per
+    the standing exception for tuning an already-approved PRD's placeholder values);
+    `--bg-surface` = `#fff` (unchanged from today's single `--bg`).
   - Dark mode: `--bg-page` = `#0d0e12` (darker than today's single dark value, so the page still
-    recedes relative to surfaces); `--bg-surface` = `#16171d` (unchanged from today's single dark
-    `--bg`).
-  - Both values are a starting point to confirm against a live render (light and dark) during
-    implementation, not a final pixel-perfect match to the swatch — adjust if the live contrast
-    looks off, same as any other visual tuning in this project.
+    recedes relative to surfaces); `--bg-surface` = `#22242e` (lightened from the first attempt,
+    `#16171d` — the user liked widgets a bit lighter against the dark page, confirmed live, same
+    "sans prd" exception).
+  - Both values were confirmed against a live render (light and dark) during implementation, with
+    two direct follow-up tweaks from the user after seeing the first live render — not a
+    pixel-perfect match to the original swatch, by design.
 - **Symmetric across both modes** — the "page recedes, surface pops" principle applies the same
   way in dark mode as in light mode, even though the user's original request only mentioned light
   mode explicitly (confirmed during grilling: dark mode should not be left as a flat, unchanged
@@ -93,3 +96,9 @@ forward, in both light and dark mode.
   widgets"), deliberately kept as its own lot rather than folded into
   `FEAT-BRANDING-HEADER-REDESIGN` — a different, unrelated concern (global page theme vs. one
   component's artwork).
+- **Addendum, folded into this same lot rather than opening a new one**: CodeMirror's default
+  active-line highlight (`.cm-activeLine`, a pale cyan-blue tint from the bundled
+  `highlightActiveLine` extension) read poorly against syntax-highlighted tokens, especially in
+  dark mode. Overridden in `app.css` to a neutral gray tint (`rgba(128, 128, 128, 0.15)`) that
+  stays legible against token colors in both modes — a live-tuned color value on the same file,
+  same "sans prd" exception as the two `--bg-page`/`--bg-surface` tweaks above.
