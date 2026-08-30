@@ -1,6 +1,12 @@
 # FEAT-BRANDING-HEADER-REDESIGN — a banner that sells the product, not just names it
 
-**Status:** ready-for-agent
+**Status:** delivered
+
+## Tickets
+
+| Ticket | Status | Title |
+|---|---|---|
+| `01-image-based-banner` | done | 01 — Image-based banner |
 
 ## Problem Statement
 

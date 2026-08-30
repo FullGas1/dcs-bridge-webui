@@ -5,10 +5,6 @@
 </script>
 
 <main>
-  <header class="app-header">
-    <h1>dcs-bridge-webui</h1>
-  </header>
-
   <BrandingHeader />
 
   <Grid />
