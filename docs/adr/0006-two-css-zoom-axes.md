@@ -10,8 +10,11 @@ happens with the pointer over a widget:
   fine. Range 40–250%.
 - **Page zoom** — a `--page-zoom` custom property (0.4–2.0) set on a `.page` wrapper around the
   branding header and the grid. Consumed explicitly: the editor/result `font-size`
-  (`calc(16px * var(--page-zoom))`, as the parent lot did) and the **banner image width**
-  (`calc(100% * var(--page-zoom))`). Range 40–200%.
+  (`calc(16px * var(--page-zoom))`, as the parent lot did) and the **banner's aspect ratio** —
+  `.branding-header { aspect-ratio: calc(1024 / 219 / min(1, var(--page-zoom))) }` with the image
+  `object-fit: cover; object-position: center`, so page zoom-out makes the banner *shorter* at
+  full width (centre-cropped) with no side bands, and zoom-in leaves it at its natural shape.
+  Range 40–200%.
 
 The floating control drives the page axis; a widget shows its own `%` in its header with a
 click-to-reset.
