@@ -1,6 +1,6 @@
 # FEAT-LUA-FILE-DROP — drag-and-drop a `.lua` file into the UI
 
-**Status:** merged (PR #13) — tickets 01–04; ticket 05 (HITL manual cross-browser check) pending
+**Status:** delivered (PR #13; fixes PR #14/#15) — verified in Chrome + Firefox
 
 **Branch:** `feature/lua-file-drop`
 
@@ -12,7 +12,7 @@
 | `02-remember-and-display-file-name` | done | 02 — Remember and display the dropped file's name |
 | `03-transient-message-and-dragover-highlight` | done | 03 — Aggregated transient message and `dragover` highlight |
 | `04-drop-onto-add-button-and-multi-file` | done | 04 — Drop onto the `+` button, and multi-file drops |
-| `05-manual-cross-browser-verification` | todo | 05 — Manual cross-browser drag-and-drop verification (HITL) |
+| `05-manual-cross-browser-verification` | done | 05 — Manual cross-browser drag-and-drop verification (HITL) |
 
 ## Problem Statement
 
