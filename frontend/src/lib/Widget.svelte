@@ -4,6 +4,7 @@
   import ExpandToggle from './ExpandToggle.svelte';
   import TemplateDropdown from './TemplateDropdown.svelte';
   import { MAX_COLLAPSED_LINES } from './layoutConstants';
+  import { dragHasFiles, readDroppedLuaFile } from './luaDrop';
   import type { Template } from './api';
   import type { InjectionQueue, Activity, LastRun, JobHandle } from './injectionQueue';
 
@@ -102,6 +103,33 @@
     editor.focus();
   }
 
+  // Ticket 01 (FEAT-LUA-FILE-DROP): a `.lua` dropped anywhere on this widget replaces the editor
+  // contents. Handled in the capture phase on the widget root so it wins over CodeMirror's own
+  // native file-drop (which would insert at the cursor) - see the ADR. `stopPropagation` also
+  // keeps the event from reaching the grid-level guard, which only cares about missed drops.
+  function onWidgetDragOverCapture(event: DragEvent): void {
+    if (!dragHasFiles(event)) return;
+    event.preventDefault();
+    event.stopPropagation();
+  }
+
+  function onWidgetDropCapture(event: DragEvent): void {
+    if (!dragHasFiles(event)) return;
+    event.preventDefault();
+    event.stopPropagation();
+    const file = event.dataTransfer?.files?.[0];
+    if (file) void loadDroppedFile(file);
+  }
+
+  async function loadDroppedFile(file: File): Promise<void> {
+    const result = await readDroppedLuaFile(file);
+    if (!result.ok) return; // ticket 03 surfaces the rejection as a transient message
+    editor.setValue(result.text);
+    code = result.text;
+    onCodeChange?.(result.text);
+    editor.focus();
+  }
+
   function send(): void {
     if (activity !== 'idle') return;
     jobHandle = queue.submit(code, {
@@ -124,7 +152,12 @@
   }
 </script>
 
-<div class="widget" data-any-expanded={editorExpanded || resultExpanded}>
+<div
+  class="widget"
+  data-any-expanded={editorExpanded || resultExpanded}
+  ondragovercapture={onWidgetDragOverCapture}
+  ondropcapture={onWidgetDropCapture}
+>
   <div class="widget-header">
     <span class="widget-number">Widget {number}</span>
     <span

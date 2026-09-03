@@ -269,4 +269,49 @@ describe('Grid', () => {
 
     expect(queryByText(/Can't reach dcs-serve/)).toBeNull();
   });
+
+  describe('ticket 01: stray file-drop guard', () => {
+    function luaFile(name: string, contents: string): File {
+      return new File([contents], name, { type: '' });
+    }
+    function fileDrop(files: File[]) {
+      return { dataTransfer: { files, types: ['Files'] } };
+    }
+
+    it('prevents the browser default when a file is dropped outside any widget', async () => {
+      const { container } = render(Grid);
+      await flush();
+
+      const notCancelled = await fireEvent.drop(
+        container,
+        fileDrop([luaFile('x.lua', 'return 1')]),
+      );
+
+      expect(notCancelled).toBe(false);
+    });
+
+    it('does not create or change a widget from a file dropped outside any widget', async () => {
+      const { container, getAllByText } = render(Grid);
+      await flush();
+
+      await fireEvent.dragOver(container, fileDrop([luaFile('x.lua', 'return 1')]));
+      await fireEvent.drop(container, fileDrop([luaFile('x.lua', 'return 1')]));
+      await flush();
+
+      expect(getAllByText(/Widget \d/)).toHaveLength(1);
+    });
+
+    it('stops listening on the window once unmounted', async () => {
+      const { unmount } = render(Grid);
+      await flush();
+      unmount();
+
+      const notCancelled = await fireEvent.drop(
+        document.body,
+        fileDrop([luaFile('x.lua', 'return 1')]),
+      );
+
+      expect(notCancelled).toBe(true);
+    });
+  });
 });

@@ -8,7 +8,7 @@
 
 | Ticket | Status | Title |
 |---|---|---|
-| `01-drop-lua-onto-widget` | todo | 01 — Drop a `.lua` file onto a widget (core path) |
+| `01-drop-lua-onto-widget` | done | 01 — Drop a `.lua` file onto a widget (core path) |
 | `02-remember-and-display-file-name` | todo | 02 — Remember and display the dropped file's name |
 | `03-transient-message-and-dragover-highlight` | todo | 03 — Aggregated transient message and `dragover` highlight |
 | `04-drop-onto-add-button-and-multi-file` | todo | 04 — Drop onto the `+` button, and multi-file drops |

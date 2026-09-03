@@ -299,4 +299,112 @@ describe('Widget', () => {
 
     expect(onDeleteTemplate).toHaveBeenCalledWith('1');
   });
+
+  describe('ticket 01: drag-and-drop a .lua file', () => {
+    function luaFile(name: string, contents: string): File {
+      return new File([contents], name, { type: '' });
+    }
+
+    function fileDrop(files: File[]) {
+      return { dataTransfer: { files, types: ['Files'] } };
+    }
+
+    it('replaces the editor contents with a dropped .lua file', async () => {
+      const { container } = render(Widget, { props: baseProps({ initialCode: 'return old()' }) });
+
+      await fireEvent.drop(
+        container.querySelector('.widget')!,
+        fileDrop([luaFile('patrol.lua', 'return patrol()')]),
+      );
+      await flush();
+
+      expect(container.querySelector('.cm-content')).toHaveTextContent('return patrol()');
+      expect(container.querySelector('.cm-content')).not.toHaveTextContent('old');
+    });
+
+    it('replaces rather than inserts even when the drop lands on the editor itself', async () => {
+      const { container } = render(Widget, { props: baseProps({ initialCode: 'AAAA' }) });
+
+      await fireEvent.drop(
+        container.querySelector('.cm-content')!,
+        fileDrop([luaFile('x.lua', 'BBBB')]),
+      );
+      await flush();
+
+      expect(container.querySelector('.cm-content')?.textContent).toBe('BBBB');
+    });
+
+    it('focuses the editor after a .lua drop', async () => {
+      const { container } = render(Widget, { props: baseProps() });
+
+      await fireEvent.drop(
+        container.querySelector('.widget')!,
+        fileDrop([luaFile('x.lua', 'return 1')]),
+      );
+      await flush();
+
+      expect(document.activeElement).toBe(container.querySelector('.cm-content'));
+    });
+
+    it('reports the dropped script via onCodeChange so it persists', async () => {
+      const onCodeChange = vi.fn();
+      const { container } = render(Widget, { props: baseProps({ onCodeChange }) });
+
+      await fireEvent.drop(
+        container.querySelector('.widget')!,
+        fileDrop([luaFile('x.lua', 'return dropped()')]),
+      );
+      await flush();
+
+      expect(onCodeChange).toHaveBeenCalledWith('return dropped()');
+    });
+
+    it('strips a leading BOM from the dropped file', async () => {
+      const { container } = render(Widget, { props: baseProps() });
+
+      await fireEvent.drop(
+        container.querySelector('.widget')!,
+        fileDrop([luaFile('bom.lua', '﻿return 1')]),
+      );
+      await flush();
+
+      expect(container.querySelector('.cm-content')?.textContent).toBe('return 1');
+    });
+
+    it('ignores a non-.lua file (contents unchanged)', async () => {
+      const { container } = render(Widget, { props: baseProps({ initialCode: 'return kept()' }) });
+
+      await fireEvent.drop(
+        container.querySelector('.widget')!,
+        fileDrop([luaFile('notes.txt', 'return other()')]),
+      );
+      await flush();
+
+      expect(container.querySelector('.cm-content')).toHaveTextContent('return kept()');
+    });
+
+    it('ignores a .lua file over 512 KB (contents unchanged)', async () => {
+      const { container } = render(Widget, { props: baseProps({ initialCode: 'return kept()' }) });
+
+      await fireEvent.drop(
+        container.querySelector('.widget')!,
+        fileDrop([luaFile('big.lua', 'x'.repeat(512 * 1024 + 1))]),
+      );
+      await flush();
+
+      expect(container.querySelector('.cm-content')).toHaveTextContent('return kept()');
+    });
+
+    it('does not start an injection on drop', async () => {
+      const { container } = render(Widget, { props: baseProps() });
+
+      await fireEvent.drop(
+        container.querySelector('.widget')!,
+        fileDrop([luaFile('x.lua', 'return 1')]),
+      );
+      await flush();
+
+      expect(injectScriptMock).not.toHaveBeenCalled();
+    });
+  });
 });

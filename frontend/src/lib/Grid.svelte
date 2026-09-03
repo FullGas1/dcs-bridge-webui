@@ -4,6 +4,7 @@
   import ConnectionBanner from './ConnectionBanner.svelte';
   import { InjectionQueue } from './injectionQueue';
   import { loadWidgets, saveWidgets } from './widgetSession';
+  import { dragHasFiles } from './luaDrop';
   import {
     listTemplates, saveTemplate, deleteTemplate, checkConnection, setApiKey, type Template,
   } from './api';
@@ -34,6 +35,21 @@
   async function handleDeleteTemplate(id: string): Promise<void> {
     templates = await deleteTemplate(id);
   }
+
+  // Ticket 01 (FEAT-LUA-FILE-DROP): a `.lua` dropped onto a widget or the add button is handled
+  // there (and that handler stops propagation). Anything that bubbles up to the window is a
+  // missed drop - swallow it so the browser doesn't navigate away to open the file.
+  onMount(() => {
+    function guardStrayFileDrag(event: DragEvent): void {
+      if (dragHasFiles(event)) event.preventDefault();
+    }
+    window.addEventListener('dragover', guardStrayFileDrag);
+    window.addEventListener('drop', guardStrayFileDrag);
+    return () => {
+      window.removeEventListener('dragover', guardStrayFileDrag);
+      window.removeEventListener('drop', guardStrayFileDrag);
+    };
+  });
 
   // Connection banner (ticket 06). Optimistic default so the banner doesn't flash on a page
   // that's actually fine while the initial probe is in flight.

@@ -1,6 +1,6 @@
 # 01 — Drop a `.lua` file onto a widget
 
-**Status:** todo
+**Status:** done
 
 ## Parent
 
@@ -34,25 +34,25 @@ target (ticket 04) build on it.
 
 ## Acceptance criteria
 
-- [ ] Dropping a `.lua` file anywhere on a widget's card (over the editor, the result, or the
+- [x] Dropping a `.lua` file anywhere on a widget's card (over the editor, the result, or the
       header) replaces the entire editor contents with the file's text and leaves the editor
       focused.
-- [ ] The replacement is a whole-document swap, not an insert at the drop position, regardless of
+- [x] The replacement is a whole-document swap, not an insert at the drop position, regardless of
       where on the editor the pointer was — CodeMirror's native file-drop behaviour does not fire.
-- [ ] The new contents persist across a reload the same way a typed edit does.
-- [ ] Dropping a non-`.lua` file (e.g. `notes.txt`) leaves the widget completely unchanged.
-- [ ] Dropping a `.lua` file larger than 512 KB leaves the widget completely unchanged.
-- [ ] A `.lua` file whose bytes start with a UTF-8 BOM loads with no BOM character at the start of
+- [x] The new contents persist across a reload the same way a typed edit does.
+- [x] Dropping a non-`.lua` file (e.g. `notes.txt`) leaves the widget completely unchanged.
+- [x] Dropping a `.lua` file larger than 512 KB leaves the widget completely unchanged.
+- [x] A `.lua` file whose bytes start with a UTF-8 BOM loads with no BOM character at the start of
       the editor contents.
-- [ ] An empty `.lua` file loads as empty editor contents; a file named exactly `.lua` is
+- [x] An empty `.lua` file loads as empty editor contents; a file named exactly `.lua` is
       accepted and loaded.
-- [ ] A file dropped on the page but outside any widget does not change any widget and does not
+- [x] A file dropped on the page but outside any widget does not change any widget and does not
       navigate the browser away from the app.
-- [ ] Dropping a file does not enqueue or start an injection.
-- [ ] `luaDrop.ts` has unit coverage for: `.lua` case-insensitive accept, non-`.lua` reject,
+- [x] Dropping a file does not enqueue or start an injection.
+- [x] `luaDrop.ts` has unit coverage for: `.lua` case-insensitive accept, non-`.lua` reject,
       over-512 KB reject, BOM stripped from returned text, empty file and `.lua`-named file
       accepted (prior art: `widgetSession.test.ts`, `injectionQueue.test.ts`).
-- [ ] `Widget.svelte` has component coverage for the replace-not-insert behaviour and the
+- [x] `Widget.svelte` has component coverage for the replace-not-insert behaviour and the
       editor-focus-after-drop behaviour (prior art: `Widget.test.ts`), using a mock
       `{ files, types: ['Files'] }` passed to `fireEvent.drop`.
 
