@@ -80,7 +80,7 @@ const REJECTION_LABEL: Record<DropRejectionReason, string> = {
  * One aggregated line summarising a drop, or null when there is nothing worth saying - a clean
  * drop of a single file, since the editor visibly changing is feedback enough. A multi-file load
  * or any rejection produces a message, e.g.
- * "2 files loaded \u00B7 1 ignored (not a .lua file)".
+ * "2 files loaded · 1 ignored (not a .lua file)".
  */
 export function formatDropMessage({ loaded, rejected }: DropPartition): string | null {
   if (rejected.length === 0 && loaded.length <= 1) return null;
@@ -93,5 +93,5 @@ export function formatDropMessage({ loaded, rejected }: DropPartition): string |
     const count = rejected.filter((r) => r.reason === reason).length;
     if (count > 0) parts.push(`${count} ignored (${REJECTION_LABEL[reason]})`);
   }
-  return parts.join(' \u00B7 ');
+  return parts.join(' · ');
 }

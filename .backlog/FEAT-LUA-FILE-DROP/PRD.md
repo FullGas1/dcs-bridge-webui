@@ -1,6 +1,6 @@
 # FEAT-LUA-FILE-DROP — drag-and-drop a `.lua` file into the UI
 
-**Status:** grilled — PRD published, ready for `to-issues`
+**Status:** tickets 01–04 done; ticket 05 (HITL manual cross-browser check) pending
 
 **Branch:** `feature/lua-file-drop`
 
