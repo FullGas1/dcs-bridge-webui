@@ -314,4 +314,32 @@ describe('Grid', () => {
       expect(notCancelled).toBe(true);
     });
   });
+
+  describe('ticket 02: remembered file name through the grid', () => {
+    function luaFile(name: string, contents: string): File {
+      return new File([contents], name, { type: '' });
+    }
+    function fileDrop(files: File[]) {
+      return { dataTransfer: { files, types: ['Files'] } };
+    }
+
+    it('persists a dropped file name and restores it on reload', async () => {
+      const first = render(Grid);
+      await flush();
+
+      await fireEvent.drop(
+        first.container.querySelector('.widget')!,
+        fileDrop([luaFile('patrol.lua', 'return 1')]),
+      );
+      await flush();
+
+      expect(localStorage.getItem('dcs-bridge-webui:widgets')).toContain('patrol.lua');
+
+      cleanup();
+      const reloaded = render(Grid);
+      await flush();
+
+      expect(reloaded.getByText(/Widget \d+ — patrol\.lua/)).toBeInTheDocument();
+    });
+  });
 });

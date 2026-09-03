@@ -45,4 +45,28 @@ describe('widgetSession', () => {
 
     expect(loadWidgets()).toBeNull();
   });
+
+  it('ticket 02: round-trips a remembered file name', () => {
+    saveWidgets([{ id: 1, code: 'return 1', filename: 'patrol.lua' }]);
+
+    expect(loadWidgets()).toEqual([{ id: 1, code: 'return 1', filename: 'patrol.lua' }]);
+  });
+
+  it('ticket 02: loads an entry saved before the filename field existed', () => {
+    localStorage.setItem(
+      'dcs-bridge-webui:widgets',
+      JSON.stringify([{ id: 1, code: 'return 1' }]),
+    );
+
+    expect(loadWidgets()).toEqual([{ id: 1, code: 'return 1' }]);
+  });
+
+  it('ticket 02: returns null when a stored filename is not a string', () => {
+    localStorage.setItem(
+      'dcs-bridge-webui:widgets',
+      JSON.stringify([{ id: 1, code: 'return 1', filename: 42 }]),
+    );
+
+    expect(loadWidgets()).toBeNull();
+  });
 });

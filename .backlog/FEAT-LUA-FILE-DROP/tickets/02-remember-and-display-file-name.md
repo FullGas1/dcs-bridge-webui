@@ -1,6 +1,6 @@
 # 02 — Remember and display the dropped file's name
 
-**Status:** todo
+**Status:** done
 
 ## Parent
 
@@ -30,18 +30,18 @@ never a path or a file handle (ADR 0005) — and survives a page reload.
 
 ## Acceptance criteria
 
-- [ ] After a `.lua` is dropped on a widget, its header shows `Widget {n} — {base name}`.
-- [ ] Dropping a second, differently-named `.lua` on the same widget updates the shown name.
-- [ ] Editing the code after a drop leaves the shown name unchanged.
-- [ ] Loading a template into the widget changes the shown name to the template's name, verbatim.
-- [ ] "Memorize" does not change the shown name.
-- [ ] A widget with no remembered name shows `Widget {n}` exactly as before this lot.
-- [ ] The remembered name round-trips through a page reload.
-- [ ] A widget state saved before this field existed still loads (as a name-less widget) — no
+- [x] After a `.lua` is dropped on a widget, its header shows `Widget {n} — {base name}`.
+- [x] Dropping a second, differently-named `.lua` on the same widget updates the shown name.
+- [x] Editing the code after a drop leaves the shown name unchanged.
+- [x] Loading a template into the widget changes the shown name to the template's name, verbatim.
+- [x] "Memorize" does not change the shown name.
+- [x] A widget with no remembered name shows `Widget {n}` exactly as before this lot.
+- [x] The remembered name round-trips through a page reload.
+- [x] A widget state saved before this field existed still loads (as a name-less widget) — no
       crash, no lost widgets.
-- [ ] `widgetSession.test.ts` is extended: an entry with `filename` round-trips; an entry without
+- [x] `widgetSession.test.ts` is extended: an entry with `filename` round-trips; an entry without
       `filename` still loads.
-- [ ] `Widget.svelte` component coverage for the header rendering in both states and for the
+- [x] `Widget.svelte` component coverage for the header rendering in both states and for the
       template-load name swap (prior art: `Widget.test.ts`).
 
 ## Blocked by

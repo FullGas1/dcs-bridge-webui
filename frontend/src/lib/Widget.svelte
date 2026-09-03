@@ -18,18 +18,24 @@
     onToggleResultExpand: () => void;
     initialCode?: string;
     onCodeChange?: (code: string) => void;
+    // Ticket 02 (FEAT-LUA-FILE-DROP): the widget's remembered source name, seeded from storage.
+    initialFilename?: string | null;
+    onFilenameChange?: (filename: string | null) => void;
     templates: Template[];
     onSaveTemplate: (name: string, code: string) => void;
     onDeleteTemplate: (id: string) => void;
   }
   let {
     number, queue, editorExpanded, resultExpanded, onClose, onToggleEditorExpand,
-    onToggleResultExpand, initialCode = '', onCodeChange, templates, onSaveTemplate,
-    onDeleteTemplate,
+    onToggleResultExpand, initialCode = '', onCodeChange, initialFilename = null,
+    onFilenameChange, templates, onSaveTemplate, onDeleteTemplate,
   }: Props = $props();
 
   // Seeded once from the prop, then independently editable - not a live mirror of it.
   let code = $state(untrack(() => initialCode));
+  // Ticket 02: the file/template name shown in the header. Seeded once, then driven by drops and
+  // template loads; unaffected by editing the code.
+  let filename = $state<string | null>(untrack(() => initialFilename));
   let activity = $state<Activity>('idle');
   let lastRun = $state<LastRun | null>(null);
   let jobHandle: JobHandle | null = null;
@@ -96,10 +102,17 @@
     namingTemplate = false;
   }
 
+  function setFilename(next: string | null): void {
+    filename = next;
+    onFilenameChange?.(next);
+  }
+
   function loadTemplate(template: Template): void {
     editor.setValue(template.code);
     code = template.code;
     onCodeChange?.(template.code);
+    // Ticket 02: the contents no longer come from a file - show the template's name instead.
+    setFilename(template.name);
     editor.focus();
   }
 
@@ -127,6 +140,7 @@
     editor.setValue(result.text);
     code = result.text;
     onCodeChange?.(result.text);
+    setFilename(result.name);
     editor.focus();
   }
 
@@ -159,7 +173,7 @@
   ondropcapture={onWidgetDropCapture}
 >
   <div class="widget-header">
-    <span class="widget-number">Widget {number}</span>
+    <span class="widget-number">{filename ? `Widget ${number} — ${filename}` : `Widget ${number}`}</span>
     <span
       class="activity-indicator"
       data-activity={activity}

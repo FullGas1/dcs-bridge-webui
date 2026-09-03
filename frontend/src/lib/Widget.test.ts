@@ -407,4 +407,97 @@ describe('Widget', () => {
       expect(injectScriptMock).not.toHaveBeenCalled();
     });
   });
+
+  describe('ticket 02: the remembered file name', () => {
+    function luaFile(name: string, contents: string): File {
+      return new File([contents], name, { type: '' });
+    }
+    function fileDrop(files: File[]) {
+      return { dataTransfer: { files, types: ['Files'] } };
+    }
+
+    it('shows only the widget number when nothing has been dropped', () => {
+      const { getByText } = render(Widget, { props: baseProps({ number: 4 }) });
+
+      expect(getByText('Widget 4')).toBeInTheDocument();
+    });
+
+    it('shows the dropped file name next to the widget number', async () => {
+      const { container, getByText } = render(Widget, { props: baseProps({ number: 4 }) });
+
+      await fireEvent.drop(
+        container.querySelector('.widget')!,
+        fileDrop([luaFile('patrol_check.lua', 'return 1')]),
+      );
+      await flush();
+
+      expect(getByText('Widget 4 — patrol_check.lua')).toBeInTheDocument();
+    });
+
+    it('replaces the shown name when a different file is dropped', async () => {
+      const { container, getByText } = render(Widget, { props: baseProps({ number: 1 }) });
+
+      await fireEvent.drop(
+        container.querySelector('.widget')!,
+        fileDrop([luaFile('first.lua', 'a')]),
+      );
+      await flush();
+      await fireEvent.drop(
+        container.querySelector('.widget')!,
+        fileDrop([luaFile('second.lua', 'b')]),
+      );
+      await flush();
+
+      expect(getByText('Widget 1 — second.lua')).toBeInTheDocument();
+    });
+
+    it('reports the remembered name via onFilenameChange so it persists', async () => {
+      const onFilenameChange = vi.fn();
+      const { container } = render(Widget, { props: baseProps({ onFilenameChange }) });
+
+      await fireEvent.drop(
+        container.querySelector('.widget')!,
+        fileDrop([luaFile('x.lua', 'return 1')]),
+      );
+      await flush();
+
+      expect(onFilenameChange).toHaveBeenCalledWith('x.lua');
+    });
+
+    it('shows the template name as a pseudo-file-name after loading a template', async () => {
+      const { getByText } = render(Widget, { props: baseProps({ number: 2 }) });
+
+      await fireEvent.click(getByText('Templates'));
+      await fireEvent.click(getByText('check menu'));
+
+      expect(getByText('Widget 2 — check menu')).toBeInTheDocument();
+    });
+
+    it('keeps the remembered name when Memorize is used', async () => {
+      const { container, getByText, getByLabelText } = render(Widget, {
+        props: baseProps({ number: 1 }),
+      });
+
+      await fireEvent.drop(
+        container.querySelector('.widget')!,
+        fileDrop([luaFile('keep.lua', 'return 1')]),
+      );
+      await flush();
+      await fireEvent.click(getByText('Memorize'));
+      await fireEvent.input(getByLabelText('Name this template'), {
+        target: { value: 'a template' },
+      });
+      await fireEvent.click(getByText('Save'));
+
+      expect(getByText('Widget 1 — keep.lua')).toBeInTheDocument();
+    });
+
+    it('seeds the remembered name from initialFilename', () => {
+      const { getByText } = render(Widget, {
+        props: baseProps({ number: 7, initialFilename: 'restored.lua' }),
+      });
+
+      expect(getByText('Widget 7 — restored.lua')).toBeInTheDocument();
+    });
+  });
 });

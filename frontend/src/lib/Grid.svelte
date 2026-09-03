@@ -12,6 +12,9 @@
   interface WidgetRecord {
     id: number;
     code: string;
+    // Ticket 02 (FEAT-LUA-FILE-DROP): base name of the dropped `.lua`, or a loaded template's
+    // name shown as a pseudo-file-name; null for a widget typed from scratch.
+    filename: string | null;
     // Ticket 01 (FEAT-ADAPTIVE-LAYOUT-AND-ZOOM): independent per area, replacing the old single
     // `expanded` flag that grew editor + result together.
     editorExpanded: boolean;
@@ -83,18 +86,24 @@
   // An empty array IS a legitimate prior state (every widget was closed) and is respected as-is.
   let widgets = $state<WidgetRecord[]>(
     stored === null
-      ? [{ id: nextId++, code: '', editorExpanded: false, resultExpanded: false }]
+      ? [{ id: nextId++, code: '', filename: null, editorExpanded: false, resultExpanded: false }]
       : stored.map((w) => ({
-          id: w.id, code: w.code, editorExpanded: false, resultExpanded: false,
+          id: w.id, code: w.code, filename: w.filename ?? null,
+          editorExpanded: false, resultExpanded: false,
         })),
   );
 
   $effect(() => {
-    saveWidgets(widgets.map((w) => ({ id: w.id, code: w.code })));
+    saveWidgets(
+      widgets.map((w) => (w.filename ? { id: w.id, code: w.code, filename: w.filename }
+                                    : { id: w.id, code: w.code })),
+    );
   });
 
   function addWidget(): void {
-    widgets.push({ id: nextId++, code: '', editorExpanded: false, resultExpanded: false });
+    widgets.push({
+      id: nextId++, code: '', filename: null, editorExpanded: false, resultExpanded: false,
+    });
   }
 
   function closeWidget(id: number): void {
@@ -115,6 +124,11 @@
     const widget = widgets.find((w) => w.id === id);
     if (widget) widget.code = code;
   }
+
+  function updateFilename(id: number, filename: string | null): void {
+    const widget = widgets.find((w) => w.id === id);
+    if (widget) widget.filename = filename;
+  }
 </script>
 
 {#if !connected}
@@ -129,10 +143,12 @@
       editorExpanded={w.editorExpanded}
       resultExpanded={w.resultExpanded}
       initialCode={w.code}
+      initialFilename={w.filename}
       onClose={() => closeWidget(w.id)}
       onToggleEditorExpand={() => toggleEditorExpand(w.id)}
       onToggleResultExpand={() => toggleResultExpand(w.id)}
       onCodeChange={(code) => updateCode(w.id, code)}
+      onFilenameChange={(filename) => updateFilename(w.id, filename)}
       {templates}
       onSaveTemplate={handleSaveTemplate}
       onDeleteTemplate={handleDeleteTemplate}
