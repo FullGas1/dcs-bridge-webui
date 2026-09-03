@@ -730,13 +730,15 @@ describe('Widget', () => {
     it('applies no zoom style at 100%', () => {
       const { container } = render(Widget, { props: baseProps({ zoom: 100 }) });
 
-      expect((container.querySelector('.widget') as HTMLElement).style.zoom).toBe('');
+      expect((container.querySelector('.widget-body') as HTMLElement).style.zoom).toBe('');
     });
 
-    it('applies a CSS zoom on the widget root when zoomed', () => {
+    it('FIX-WIDGET-ZOOM-HEADER: zooms the body, not the widget or the header', () => {
       const { container } = render(Widget, { props: baseProps({ zoom: 150 }) });
 
-      expect((container.querySelector('.widget') as HTMLElement).style.zoom).toBe('1.5');
+      expect((container.querySelector('.widget-body') as HTMLElement).style.zoom).toBe('1.5');
+      expect((container.querySelector('.widget') as HTMLElement).style.zoom).toBe('');
+      expect((container.querySelector('.widget-header') as HTMLElement).style.zoom).toBe('');
     });
 
     it('carries its id on the root for the grid wheel router', () => {
