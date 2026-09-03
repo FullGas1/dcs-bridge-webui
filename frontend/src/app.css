@@ -76,9 +76,10 @@ button:disabled {
 .cm-editor-container {
   height: 100%;
   min-height: 8em;
-  /* FEAT-DUAL-ZOOM: plain 16px again - the page zoom (App .page wrapper) and the per-widget zoom
-     (.widget) are both CSS `zoom`, which scales font-size on its own. */
-  font-size: 16px;
+  /* FEAT-DUAL-ZOOM: the page zoom scales the editor/result font (bird's-eye of many scripts);
+     `--page-zoom` is set on App's .page wrapper, 1 at 100%. The per-widget zoom is CSS `zoom` on
+     the .widget and composes on top of this. */
+  font-size: calc(16px * var(--page-zoom, 1));
 }
 .cm-editor-container .cm-editor {
   height: 100%;

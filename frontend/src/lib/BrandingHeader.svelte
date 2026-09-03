@@ -15,11 +15,18 @@
   .branding-header {
     border-bottom: 1px solid var(--border);
     line-height: 0;
+    /* FEAT-DUAL-ZOOM: when the page is zoomed out the banner shrinks with it; the freed space
+       reads as page background rather than a gap. */
+    background: var(--bg-page);
   }
 
   img {
     display: block;
-    width: 100%;
+    /* FEAT-DUAL-ZOOM: page zoom shrinks/grows the banner (App .page wrapper's --page-zoom, 1 at
+       100%). A `width:100%` under a CSS `zoom` re-inflates and never changes size, so scale the
+       width explicitly. */
+    width: calc(100% * var(--page-zoom, 1));
+    max-width: 100%;
     height: auto;
   }
 </style>

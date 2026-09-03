@@ -1,8 +1,7 @@
 <script lang="ts">
   // FEAT-DUAL-ZOOM: the floating control now drives the *page* zoom only (App.svelte owns the
   // value and its persistence; the per-widget axis is Ctrl+scroll over a widget - Grid.svelte).
-  // Still one instance, mounted once at the app level, and outside the zoomed page wrapper so it
-  // keeps a constant on-screen size.
+  // Rendered outside the .page wrapper, so the page zoom never scales it.
   import { clampZoom, MIN_ZOOM, MAX_ZOOM, ZOOM_STEP } from './zoomStore';
 
   let { zoom = $bindable(100) }: { zoom?: number } = $props();
@@ -32,9 +31,6 @@
     right: 16px;
     bottom: 16px;
     z-index: 50;
-    /* FEAT-DUAL-ZOOM: the control lives outside the zoomed page wrapper; this guards against it
-       ever inheriting a zoom context so it stays a fixed on-screen size. */
-    zoom: 1;
     display: flex;
     align-items: center;
     gap: 4px;

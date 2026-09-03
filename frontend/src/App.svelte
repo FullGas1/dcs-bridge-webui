@@ -4,9 +4,12 @@
   import ZoomControl from './lib/ZoomControl.svelte';
   import { clampZoom, loadZoom, saveZoom } from './lib/zoomStore';
 
-  // FEAT-DUAL-ZOOM: App owns the page-zoom value. It is applied as CSS `zoom` on the .page
-  // wrapper (so the banner scales too) and persisted here; ZoomControl is rendered outside the
-  // wrapper so it keeps a constant on-screen size.
+  // FEAT-DUAL-ZOOM: App owns the page-zoom value. It is exposed as the `--page-zoom` custom
+  // property on the .page wrapper (scoped there so the floating control, outside it, is
+  // unaffected) and persisted here. CSS `zoom` was tried first but is a no-op on a
+  // viewport-filling wrapper (the browser re-inflates the layout under it); `--page-zoom` is
+  // consumed explicitly - the banner image width and the editor/result font-size (see app.css /
+  // Widget.svelte).
   let pageZoom = $state(loadZoom());
 
   $effect(() => {
@@ -19,7 +22,7 @@
 </script>
 
 <main>
-  <div class="page" style="zoom: {pageZoom / 100}">
+  <div class="page" style="--page-zoom: {pageZoom / 100}">
     <BrandingHeader />
 
     <Grid onNudgePageZoom={nudgePageZoom} />
