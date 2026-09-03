@@ -1,6 +1,6 @@
 # FEAT-DUAL-ZOOM — per-widget zoom on hover, global page zoom outside, wider zoom-out
 
-**Status:** merged (PR #17) — tickets 01-03; ticket 04 (HITL) pending
+**Status:** delivered (PR #17–#19) — verified in Chrome + Firefox
 
 **Branch:** `feature/dual-zoom`
 
@@ -14,7 +14,7 @@ from `.backlog/roadmap.md` "Rework the zoom rules".
 | `01-global-page-zoom-via-css-zoom` | done | 01 — Global page zoom (banner included) via CSS `zoom`, wider range |
 | `02-per-widget-zoom-on-hover` | done | 02 — Per-widget zoom on Ctrl+scroll over a widget |
 | `03-per-widget-zoom-indicator-and-persistence` | done | 03 — Header indicator + reset, persisted per widget |
-| `04-manual-verification` | todo | 04 — Manual verification (HITL), Chrome + Firefox |
+| `04-manual-verification` | done | 04 — Manual verification (HITL), Chrome + Firefox |
 
 ## Problem Statement
 
