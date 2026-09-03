@@ -269,4 +269,278 @@ describe('Grid', () => {
 
     expect(queryByText(/Can't reach dcs-serve/)).toBeNull();
   });
+
+  describe('ticket 01: stray file-drop guard', () => {
+    function luaFile(name: string, contents: string): File {
+      return new File([contents], name, { type: '' });
+    }
+    function fileDrop(files: File[]) {
+      return { dataTransfer: { files, types: ['Files'] } };
+    }
+
+    it('prevents the browser default when a file is dropped outside any widget', async () => {
+      const { container } = render(Grid);
+      await flush();
+
+      const notCancelled = await fireEvent.drop(
+        container,
+        fileDrop([luaFile('x.lua', 'return 1')]),
+      );
+
+      expect(notCancelled).toBe(false);
+    });
+
+    it('does not create or change a widget from a file dropped outside any widget', async () => {
+      const { container, getAllByText } = render(Grid);
+      await flush();
+
+      await fireEvent.dragOver(container, fileDrop([luaFile('x.lua', 'return 1')]));
+      await fireEvent.drop(container, fileDrop([luaFile('x.lua', 'return 1')]));
+      await flush();
+
+      expect(getAllByText(/Widget \d/)).toHaveLength(1);
+    });
+
+    it('stops listening on the window once unmounted', async () => {
+      const { unmount } = render(Grid);
+      await flush();
+      unmount();
+
+      const notCancelled = await fireEvent.drop(
+        document.body,
+        fileDrop([luaFile('x.lua', 'return 1')]),
+      );
+
+      expect(notCancelled).toBe(true);
+    });
+  });
+
+  describe('ticket 03: transient drop message', () => {
+    function luaFile(name: string, contents: string): File {
+      return new File([contents], name, { type: '' });
+    }
+    function fileDrop(files: File[]) {
+      return { dataTransfer: { files, types: ['Files'] } };
+    }
+
+    it('shows a message when a dropped file is ignored', async () => {
+      const { container, getByText } = render(Grid);
+      await flush();
+
+      await fireEvent.drop(
+        container.querySelector('.widget')!,
+        fileDrop([luaFile('notes.txt', 'return 1')]),
+      );
+      await flush();
+
+      expect(getByText('1 ignored (not a .lua file)')).toBeInTheDocument();
+    });
+
+    it('shows a message when a dropped .lua is over the size cap', async () => {
+      const { container, getByText } = render(Grid);
+      await flush();
+
+      await fireEvent.drop(
+        container.querySelector('.widget')!,
+        fileDrop([luaFile('big.lua', 'x'.repeat(512 * 1024 + 1))]),
+      );
+      await flush();
+
+      expect(getByText('1 ignored (over 512 KB)')).toBeInTheDocument();
+    });
+
+    it('replaces a still-showing message with the next drop rather than stacking', async () => {
+      const { container, getByText, queryByText } = render(Grid);
+      await flush();
+      const widget = () => container.querySelector('.widget')!;
+
+      await fireEvent.drop(widget(), fileDrop([luaFile('a.txt', '1')]));
+      await flush();
+      await fireEvent.drop(widget(), fileDrop([luaFile('b.md', '1')]));
+      await flush();
+
+      expect(queryByText(/not a \.lua file/)).toBeInTheDocument();
+      expect(container.querySelectorAll('.drop-message')).toHaveLength(1);
+      getByText('1 ignored (not a .lua file)');
+    });
+
+    it('shows no message for a clean single-file drop', async () => {
+      const { container, queryByText } = render(Grid);
+      await flush();
+
+      await fireEvent.drop(
+        container.querySelector('.widget')!,
+        fileDrop([luaFile('ok.lua', 'return 1')]),
+      );
+      await flush();
+
+      expect(queryByText(/loaded|ignored/)).toBeNull();
+    });
+
+    it('dismisses the message when its close button is clicked', async () => {
+      const { container, getByText, queryByText, getByLabelText } = render(Grid);
+      await flush();
+
+      await fireEvent.drop(
+        container.querySelector('.widget')!,
+        fileDrop([luaFile('notes.txt', 'return 1')]),
+      );
+      await flush();
+      expect(getByText('1 ignored (not a .lua file)')).toBeInTheDocument();
+
+      await fireEvent.click(getByLabelText('Dismiss message'));
+
+      expect(queryByText('1 ignored (not a .lua file)')).toBeNull();
+    });
+
+    it('auto-dismisses the message after five seconds', async () => {
+      vi.useFakeTimers();
+      try {
+        const { container, queryByText } = render(Grid);
+        await vi.advanceTimersByTimeAsync(0);
+
+        await fireEvent.drop(
+          container.querySelector('.widget')!,
+          fileDrop([luaFile('notes.txt', 'return 1')]),
+        );
+        await vi.advanceTimersByTimeAsync(0);
+        expect(queryByText('1 ignored (not a .lua file)')).toBeInTheDocument();
+
+        await vi.advanceTimersByTimeAsync(5000);
+
+        expect(queryByText('1 ignored (not a .lua file)')).toBeNull();
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+  });
+
+  describe('ticket 04: dropping files on the add button', () => {
+    function luaFile(name: string, contents: string): File {
+      return new File([contents], name, { type: '' });
+    }
+    function fileDrag() {
+      return { dataTransfer: { types: ['Files'] } };
+    }
+    function fileDrop(files: File[]) {
+      return { dataTransfer: { files, types: ['Files'] } };
+    }
+
+    it('creates one pre-filled, named widget per dropped .lua, in file order', async () => {
+      const { getByLabelText, getAllByText, container } = render(Grid);
+      await flush();
+
+      await fireEvent.drop(
+        getByLabelText('Add widget'),
+        fileDrop([
+          luaFile('alpha.lua', 'return 1'),
+          luaFile('bravo.lua', 'return 2'),
+          luaFile('charlie.lua', 'return 3'),
+        ]),
+      );
+      await flush();
+
+      // one seeded empty widget + three from the drop
+      expect(getAllByText(/Widget \d/)).toHaveLength(4);
+      const names = [...container.querySelectorAll('.widget-number')].map((n) => n.textContent);
+      expect(names).toEqual([
+        'Widget 1',
+        'Widget 2 — alpha.lua',
+        'Widget 3 — bravo.lua',
+        'Widget 4 — charlie.lua',
+      ]);
+    });
+
+    it('creates only the accepted widgets and messages about the rest', async () => {
+      const { getByLabelText, getAllByText, getByText } = render(Grid);
+      await flush();
+
+      await fireEvent.drop(
+        getByLabelText('Add widget'),
+        fileDrop([luaFile('ok.lua', 'return 1'), luaFile('notes.txt', 'x')]),
+      );
+      await flush();
+
+      expect(getAllByText(/Widget \d/)).toHaveLength(2);
+      expect(getByText('1 file loaded · 1 ignored (not a .lua file)')).toBeInTheDocument();
+    });
+
+    it('creates no widget when a batch has no accepted .lua', async () => {
+      const { getByLabelText, getAllByText, getByText } = render(Grid);
+      await flush();
+
+      await fireEvent.drop(
+        getByLabelText('Add widget'),
+        fileDrop([luaFile('a.txt', 'x'), luaFile('b.md', 'y')]),
+      );
+      await flush();
+
+      expect(getAllByText(/Widget \d/)).toHaveLength(1);
+      expect(getByText('2 ignored (not a .lua file)')).toBeInTheDocument();
+    });
+
+    it('does not move focus when widgets are created from an add-button drop', async () => {
+      const { getByLabelText } = render(Grid);
+      await flush();
+
+      await fireEvent.drop(
+        getByLabelText('Add widget'),
+        fileDrop([luaFile('a.lua', '1'), luaFile('b.lua', '2')]),
+      );
+      await flush();
+
+      expect(document.activeElement).toBe(document.body);
+    });
+
+    it('highlights the add button while a file is dragged over it', async () => {
+      const { getByLabelText } = render(Grid);
+      await flush();
+      const addButton = getByLabelText('Add widget');
+
+      await fireEvent.dragEnter(addButton, fileDrag());
+
+      expect(addButton.getAttribute('data-drag-over')).toBe('true');
+
+      await fireEvent.dragLeave(addButton, fileDrag());
+      expect(addButton.getAttribute('data-drag-over')).toBe('false');
+    });
+
+    it('does not highlight the add button for a non-file drag', async () => {
+      const { getByLabelText } = render(Grid);
+      await flush();
+      const addButton = getByLabelText('Add widget');
+
+      await fireEvent.dragEnter(addButton, { dataTransfer: { types: ['text/plain'] } });
+
+      expect(addButton.getAttribute('data-drag-over')).toBe('false');
+    });
+  });
+
+  describe('ticket 02: remembered file name through the grid', () => {
+    function luaFile(name: string, contents: string): File {
+      return new File([contents], name, { type: '' });
+    }
+    function fileDrop(files: File[]) {
+      return { dataTransfer: { files, types: ['Files'] } };
+    }
+
+    it('persists a dropped file name and restores it on reload', async () => {
+      const first = render(Grid);
+      await flush();
+
+      await fireEvent.drop(
+        first.container.querySelector('.widget')!,
+        fileDrop([luaFile('patrol.lua', 'return 1')]),
+      );
+      await flush();
+
+      expect(localStorage.getItem('dcs-bridge-webui:widgets')).toContain('patrol.lua');
+
+      cleanup();
+      const reloaded = render(Grid);
+      await flush();
+
+      expect(reloaded.getByText(/Widget \d+ — patrol\.lua/)).toBeInTheDocument();
+    });
+  });
 });

@@ -3,6 +3,10 @@ const STORAGE_KEY = 'dcs-bridge-webui:widgets';
 export interface StoredWidget {
   id: number;
   code: string;
+  // Ticket 02 (FEAT-LUA-FILE-DROP): the base name of the `.lua` file dropped into the widget, or
+  // a loaded template's name shown as a pseudo-file-name. Absent for widgets typed from scratch
+  // and for sessions saved before this field existed.
+  filename?: string;
 }
 
 /**
@@ -33,6 +37,8 @@ function isStoredWidget(value: unknown): value is StoredWidget {
     typeof value === 'object' &&
     value !== null &&
     typeof (value as StoredWidget).id === 'number' &&
-    typeof (value as StoredWidget).code === 'string'
+    typeof (value as StoredWidget).code === 'string' &&
+    ((value as StoredWidget).filename === undefined ||
+      typeof (value as StoredWidget).filename === 'string')
   );
 }
