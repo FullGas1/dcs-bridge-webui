@@ -219,7 +219,7 @@
       data-activity={activity}
       aria-label={activity === 'idle' ? 'idle' : activity}
     ></span>
-    <button type="button" onclick={send} disabled={activity !== 'idle'}>Send</button>
+    <button type="button" class="send-btn" onclick={send} disabled={activity !== 'idle'}>Send</button>
     <button type="button" onclick={stop} disabled={activity === 'idle'}>Stop</button>
     <ExpandToggle expanded={editorExpanded} onToggle={onToggleEditorExpand} area="Editor" />
     <ExpandToggle expanded={resultExpanded} onToggle={onToggleResultExpand} area="Result" />
@@ -318,6 +318,56 @@
     gap: 8px;
     padding: 6px 8px;
     border-bottom: 1px solid var(--border);
+    /* FEAT-WIDGET-HEADER-CONTRAST: recess the header a step below the card so the buttons - now
+       on a light fill - read as a toolbar, not as flat text on the card. */
+    background: #aeb3ba;
+  }
+
+  /* All header controls (incl. ExpandToggle / TemplateDropdown, hence :global) on a light fill
+     with a defined border. */
+  .widget-header :global(button) {
+    background: #fbfbfc;
+    border-color: #b0b4bb;
+    color: #08060d;
+  }
+  .widget-header :global(button:hover:not(:disabled)) {
+    background: #fff;
+    border-color: #9aa0a8;
+  }
+
+  /* Send is the consequential action (it injects into a live mission) - a deep red. */
+  .widget-header :global(.send-btn) {
+    background: #a32d2d;
+    border-color: #7f2323;
+    color: #fff;
+  }
+  .widget-header :global(.send-btn:hover:not(:disabled)) {
+    background: #b23434;
+    border-color: #7f2323;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    .widget-header {
+      background: #191b22;
+    }
+    .widget-header :global(button) {
+      background: #313440;
+      border-color: #474b58;
+      color: var(--text-h);
+    }
+    .widget-header :global(button:hover:not(:disabled)) {
+      background: #3a3e4c;
+      border-color: #565b6a;
+    }
+    .widget-header :global(.send-btn) {
+      background: #b83a37;
+      border-color: #8f2a28;
+      color: #fff;
+    }
+    .widget-header :global(.send-btn:hover:not(:disabled)) {
+      background: #c84340;
+      border-color: #8f2a28;
+    }
   }
 
   .widget-number {
