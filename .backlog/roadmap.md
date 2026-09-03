@@ -17,21 +17,9 @@ Path to formalization: `grill-with-docs` → `to-prd` → `to-issues`.
      per-widget zoom on Ctrl+scroll over a widget, global page zoom (banner included) elsewhere,
      both CSS `zoom`, ranges widened to 40%. -->
 
-## App settings panel
-
-A button in the page header that opens a grid of editable parameters to reconfigure the app,
-persisted across reloads. Today every tunable is either a hardcoded constant or ambient
-localStorage state with no UI to change it. First candidate settings to expose:
-
-- **Max drag-and-dropped file size** (see the drag-and-drop entry — shipped as a hardcoded 512 KB
-  first, to be made configurable here).
-- **Zoom-out floor and zoom-in ceiling** (see the zoom-rules entry — currently hardcoded
-  80%–200%).
-
-Open questions for grilling: storage (localStorage vs backend, like templates); per-setting
-validation and what happens on a bad value; whether "reset to defaults" is offered; whether the
-panel is a modal, a drawer, or an inline section; which of the existing hardcoded constants
-(`MAX_COLLAPSED_LINES`, queue behaviour, etc.) are in scope vs. deliberately left alone.
+<!-- "App settings panel" (editable app parameters persisted across reloads) — dropped 2026-09-03
+     by the user; the hardcoded constants (512 KB drop cap, 40-200% / 40-250% zoom ranges) stay
+     as-is. -->
 
 <!-- Save a widget's script back to a `.lua` file — formalized as
      `.backlog/FEAT-SAVE-WIDGET-FILE/` (autonomous grill, ADR 0007): header right-click →
