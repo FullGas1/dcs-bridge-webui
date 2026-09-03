@@ -47,8 +47,15 @@
       // *entire* rendered chrome, whichever internal layer happens to carry it. .scrollHeight
       // also forces the browser to complete any pending layout before returning, unlike
       // view.contentHeight which can read stale (observed live).
+      //
+      // FIX-EDITOR-DROP-HEIGHT: right after a bulk setValue() (a dropped file, a loaded template)
+      // the new lines are not laid out yet, so scrollHeight reads short and this subtraction goes
+      // negative. A negative `height:` is dropped by the browser, leaving the editor to grow to
+      // its full content and stay there (reportHeight only re-runs on docChanged, not on an
+      // Expand/Collapse toggle). Clamp the chrome at zero: worst case the collapsed editor is
+      // ~8px shorter than ideal for one frame, never uncapped.
       const fullContentHeight = container?.scrollHeight ?? 0;
-      const chrome = fullContentHeight - lineCount * view.defaultLineHeight;
+      const chrome = Math.max(0, fullContentHeight - lineCount * view.defaultLineHeight);
       onHeightChange?.(MAX_COLLAPSED_LINES * view.defaultLineHeight + chrome);
     }
 
