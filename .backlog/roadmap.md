@@ -9,14 +9,9 @@ Path to formalization: `grill-with-docs` → `to-prd` → `to-issues`.
 <!-- Make the most of widget screen space — formalized as
      `.backlog/FEAT-ADAPTIVE-LAYOUT-AND-ZOOM/` (grill-with-docs, 2026-08-30). -->
 
-## Drag-and-drop a `.lua` file into the UI
+<!-- Drag-and-drop a `.lua` file into the UI — formalized as `.backlog/FEAT-LUA-FILE-DROP/`
+     (grill-with-docs) and delivered (PR #13-#16, fixes FIX-EDITOR-DROP-HEIGHT #14/#15). -->
 
-Let the user drag a `.lua` script file from their file manager and drop it either onto an
-**active widget** (loads the file's contents into that widget's editor) or onto the **`(+)` "add
-widget" button** (creates a new widget pre-filled with the file's contents). Today the only way
-to get a script into a widget is to paste it or type it. Open questions for grilling: overwrite
-vs. confirm when dropping on a non-empty widget; whether to keep the source filename anywhere
-(widget title?); multi-file drop onto `(+)`; non-`.lua` / oversized file handling.
 
 <!-- Rework the zoom rules — formalized as `.backlog/FEAT-DUAL-ZOOM/` (autonomous grill, ADR 0006):
      per-widget zoom on Ctrl+scroll over a widget, global page zoom (banner included) elsewhere,
