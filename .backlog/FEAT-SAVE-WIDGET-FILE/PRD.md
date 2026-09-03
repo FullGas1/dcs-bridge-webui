@@ -1,6 +1,6 @@
 # FEAT-SAVE-WIDGET-FILE — save a widget's script back to a `.lua` file
 
-**Status:** grilled (autonomous) — PRD + tickets, ready to implement
+**Status:** merged (PR #24) — tickets 01-02; ticket 03 (HITL) pending
 
 **Branch:** `feature/save-widget-to-file`
 
