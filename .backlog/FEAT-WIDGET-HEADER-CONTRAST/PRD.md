@@ -27,5 +27,5 @@ Chosen from a live mock-up comparison (option "C" + Send red brique).
 
 ## Testing
 
-CSS only. `npm run check`, `npm test` (185), `npm run build` green; verified live in the browser
-in both light and dark mode.
+CSS only. `npm run check`, `npm test` (185), `npm run build` green; verified live in Chrome and
+Firefox, both light and dark mode.
