@@ -241,14 +241,20 @@
 </div>
 
 <style>
-  /* Ticket 03 (FEAT-LUA-FILE-DROP): full-width bar under the branding header, above the grid. */
+  /* Ticket 03 (FEAT-LUA-FILE-DROP): full-width bar under the branding header, above the grid.
+     FIX-EDITOR-DROP-HEIGHT: sticky + accent stripe so it is not missed against a widget whose
+     editor just changed, and stays put if the page ever scrolls. */
   .drop-message {
+    position: sticky;
+    top: 0;
+    z-index: 5;
     display: flex;
     align-items: center;
     gap: 8px;
-    padding: 6px 16px;
+    padding: 8px 16px;
     background: var(--bg-surface);
     border-bottom: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
     font-size: 13px;
   }
 

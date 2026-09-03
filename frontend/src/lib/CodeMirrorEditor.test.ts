@@ -36,6 +36,23 @@ describe('CodeMirrorEditor - ticket 02 collapsed-height reporting', () => {
     expect(typeof lastCall?.[0]).toBe('number');
   });
 
+  it('never reports a negative collapsed height when the container measures short (stale layout after a bulk setValue)', () => {
+    // Simulates the real bug: right after replacing the whole doc (dropped file / loaded
+    // template) the new lines are not laid out, so scrollHeight reads far short of the real
+    // content height. The old formula produced a negative px height, which CSS drops - leaving
+    // the editor uncapped and stuck (FIX-EDITOR-DROP-HEIGHT).
+    vi.spyOn(HTMLElement.prototype, 'scrollHeight', 'get').mockReturnValue(40);
+    const onHeightChange = vi.fn();
+
+    render(CodeMirrorEditor, {
+      props: { initialValue: linesOf(MAX_COLLAPSED_LINES + 25), onChange: vi.fn(), onHeightChange },
+    });
+
+    const reported = onHeightChange.mock.calls.at(-1)?.[0];
+    expect(reported).not.toBeNull();
+    expect(reported).toBeGreaterThanOrEqual(0);
+  });
+
   it('re-reports as the document changes, switching from null to an explicit height when it crosses the threshold', () => {
     const onHeightChange = vi.fn();
     const { component } = render(CodeMirrorEditor, {

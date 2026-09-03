@@ -336,6 +336,23 @@ describe('Grid', () => {
       expect(getByText('1 ignored (not a .lua file)')).toBeInTheDocument();
     });
 
+    it('shows a message when several files are dropped on one widget', async () => {
+      const { container, getByText } = render(Grid);
+      await flush();
+
+      await fireEvent.drop(
+        container.querySelector('.widget')!,
+        fileDrop([
+          luaFile('a.lua', 'return 1'),
+          luaFile('b.lua', 'return 2'),
+          luaFile('c.lua', 'return 3'),
+        ]),
+      );
+      await flush();
+
+      expect(getByText('1 file loaded · 2 ignored (only one file per widget)')).toBeInTheDocument();
+    });
+
     it('shows a message when a dropped .lua is over the size cap', async () => {
       const { container, getByText } = render(Grid);
       await flush();
