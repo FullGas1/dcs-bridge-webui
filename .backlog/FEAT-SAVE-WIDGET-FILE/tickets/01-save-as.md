@@ -1,6 +1,6 @@
 # 01 — "Save as…" from a header right-click (picker or download)
 
-**Status:** todo
+**Status:** done
 
 ## Parent
 
@@ -31,20 +31,20 @@ where it exists, otherwise a plain download.
 
 ## Acceptance criteria
 
-- [ ] Right-clicking the widget header opens the menu and suppresses the browser's own menu;
+- [x] Right-clicking the widget header opens the menu and suppresses the browser's own menu;
       right-clicking the editor does not open ours.
-- [ ] The menu shows "Save as…"; it closes on Escape, on an outside click, and after the item is
+- [x] The menu shows "Save as…"; it closes on Escape, on an outside click, and after the item is
       chosen.
-- [ ] "Save as…" with the picker available writes exactly the editor's current text (no BOM, no
+- [x] "Save as…" with the picker available writes exactly the editor's current text (no BOM, no
       trailing changes) to the picked file, and the widget's header name updates to that file's
       name.
-- [ ] "Save as…" without the picker triggers a download whose file name is the suggested name.
-- [ ] Cancelling the picker writes nothing and changes nothing.
-- [ ] `suggestedFileName` covers: remembered ending `.lua`, remembered without extension, and no
+- [x] "Save as…" without the picker triggers a download whose file name is the suggested name.
+- [x] Cancelling the picker writes nothing and changes nothing.
+- [x] `suggestedFileName` covers: remembered ending `.lua`, remembered without extension, and no
       remembered name (`widget-{n}.lua`).
-- [ ] `widgetSave.test.ts`, `WidgetContextMenu.test.ts`, and `Widget.test.ts` cover the above
+- [x] `widgetSave.test.ts`, `WidgetContextMenu.test.ts`, and `Widget.test.ts` cover the above
       (picker mocked, `URL.createObjectURL` mocked).
-- [ ] Full frontend suite, `svelte-check`, `vite build` green.
+- [x] Full frontend suite, `svelte-check`, `vite build` green.
 
 ## Blocked by
 
