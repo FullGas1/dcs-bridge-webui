@@ -24,6 +24,10 @@
     // Ticket 03 (FEAT-LUA-FILE-DROP): reports the drop's outcome so the grid can show one
     // aggregated transient message.
     onDropReport?: (partition: DropPartition) => void;
+    // FEAT-DUAL-ZOOM: this widget's zoom percentage (controlled by Grid - the Ctrl+scroll
+    // listener lives there); `onZoomReset` is the header readout's click-to-100.
+    zoom?: number;
+    onZoomReset?: () => void;
     templates: Template[];
     onSaveTemplate: (name: string, code: string) => void;
     onDeleteTemplate: (id: string) => void;
@@ -31,7 +35,8 @@
   let {
     number, queue, editorExpanded, resultExpanded, onClose, onToggleEditorExpand,
     onToggleResultExpand, initialCode = '', onCodeChange, initialFilename = null,
-    onFilenameChange, onDropReport, templates, onSaveTemplate, onDeleteTemplate,
+    onFilenameChange, onDropReport, zoom = 100, onZoomReset, templates, onSaveTemplate,
+    onDeleteTemplate,
   }: Props = $props();
 
   // Seeded once from the prop, then independently editable - not a live mirror of it.
@@ -193,8 +198,10 @@
 
 <div
   class="widget"
+  data-widget-id={number}
   data-any-expanded={editorExpanded || resultExpanded}
   data-drag-over={dragDepth > 0}
+  style={zoom !== 100 ? `zoom: ${zoom / 100}` : ''}
   ondragentercapture={onWidgetDragEnterCapture}
   ondragleavecapture={onWidgetDragLeaveCapture}
   ondragovercapture={onWidgetDragOverCapture}
@@ -202,6 +209,11 @@
 >
   <div class="widget-header">
     <span class="widget-number">{filename ? `Widget ${number} — ${filename}` : `Widget ${number}`}</span>
+    {#if zoom !== 100}
+      <button type="button" class="widget-zoom" onclick={() => onZoomReset?.()} title="Reset zoom">
+        {zoom}%
+      </button>
+    {/if}
     <span
       class="activity-indicator"
       data-activity={activity}
@@ -311,7 +323,13 @@
   .widget-number {
     font-size: 13px;
     opacity: 0.7;
-    margin-right: auto;
+  }
+
+  /* FEAT-DUAL-ZOOM: shown only when this widget is not at 100%; click to reset. */
+  .widget-zoom {
+    font-size: 12px;
+    padding: 1px 6px;
+    opacity: 0.8;
   }
 
   .activity-indicator {
@@ -320,6 +338,9 @@
     border-radius: 50%;
     background: var(--border);
     flex: none;
+    /* FEAT-DUAL-ZOOM: was `margin-right: auto` on .widget-number; move the push here so the
+       optional zoom readout can sit next to the number. */
+    margin-left: auto;
   }
   .activity-indicator[data-activity='running'] {
     background: var(--accent);
@@ -356,9 +377,8 @@
     border-top: 1px solid var(--border);
     padding: 6px 8px;
     font-family: var(--mono);
-    /* Ticket 03: base 13px (today's default, unchanged at 100%) scaled by the same page-wide
-       zoom factor the editor uses (ZoomControl.svelte / app.css). */
-    font-size: calc(13px * var(--zoom-factor));
+    /* FEAT-DUAL-ZOOM: plain 13px - the page and per-widget zoom are CSS `zoom` now. */
+    font-size: 13px;
     overflow: auto;
     flex: none;
   }

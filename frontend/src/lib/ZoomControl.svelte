@@ -1,34 +1,11 @@
 <script lang="ts">
-  // Ticket 03 (FEAT-ADAPTIVE-LAYOUT-AND-ZOOM): the single page-wide zoom control - one instance,
-  // mounted once at the app level (see App.svelte), never per-widget (a per-widget control would
-  // misleadingly imply a per-widget effect when the zoom is page-wide). Floating so it stays
-  // reachable at any scroll position.
-  import { clampZoom, loadZoom, saveZoom, MIN_ZOOM, MAX_ZOOM, ZOOM_STEP } from './zoomStore';
+  // FEAT-DUAL-ZOOM: the floating control now drives the *page* zoom only (App.svelte owns the
+  // value and its persistence; the per-widget axis is Ctrl+scroll over a widget - Grid.svelte).
+  // Still one instance, mounted once at the app level, and outside the zoomed page wrapper so it
+  // keeps a constant on-screen size.
+  import { clampZoom, MIN_ZOOM, MAX_ZOOM, ZOOM_STEP } from './zoomStore';
 
-  let zoom = $state(loadZoom());
-
-  $effect(() => {
-    // A single CSS variable, read by both the editor container and the result body (app.css /
-    // Widget.svelte) - purely visual (font-size), never touches a document's own content or its
-    // undo history.
-    document.documentElement.style.setProperty('--zoom-factor', String(zoom / 100));
-    saveZoom(zoom);
-  });
-
-  $effect(() => {
-    function handleWheel(e: WheelEvent): void {
-      if (!e.ctrlKey) return;
-      // Anywhere on the page - there's only one zoom level to adjust (see PRD: a two-zone
-      // editor-vs-result split was considered and dropped in favor of this single value).
-      e.preventDefault();
-      zoom = clampZoom(zoom + (e.deltaY < 0 ? ZOOM_STEP : -ZOOM_STEP));
-    }
-
-    // { passive: false } is required to be allowed to preventDefault() and stop the browser's
-    // own native page zoom from also firing on the same gesture.
-    window.addEventListener('wheel', handleWheel, { passive: false });
-    return () => window.removeEventListener('wheel', handleWheel);
-  });
+  let { zoom = $bindable(100) }: { zoom?: number } = $props();
 
   function zoomIn(): void {
     zoom = clampZoom(zoom + ZOOM_STEP);
@@ -55,6 +32,9 @@
     right: 16px;
     bottom: 16px;
     z-index: 50;
+    /* FEAT-DUAL-ZOOM: the control lives outside the zoomed page wrapper; this guards against it
+       ever inheriting a zoom context so it stays a fixed on-screen size. */
+    zoom: 1;
     display: flex;
     align-items: center;
     gap: 4px;

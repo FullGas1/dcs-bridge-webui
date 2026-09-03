@@ -584,6 +584,43 @@ describe('Widget', () => {
     });
   });
 
+  describe('FEAT-DUAL-ZOOM: per-widget zoom', () => {
+    it('applies no zoom style at 100%', () => {
+      const { container } = render(Widget, { props: baseProps({ zoom: 100 }) });
+
+      expect((container.querySelector('.widget') as HTMLElement).style.zoom).toBe('');
+    });
+
+    it('applies a CSS zoom on the widget root when zoomed', () => {
+      const { container } = render(Widget, { props: baseProps({ zoom: 150 }) });
+
+      expect((container.querySelector('.widget') as HTMLElement).style.zoom).toBe('1.5');
+    });
+
+    it('carries its id on the root for the grid wheel router', () => {
+      const { container } = render(Widget, { props: baseProps({ number: 7 }) });
+
+      expect((container.querySelector('.widget') as HTMLElement).dataset.widgetId).toBe('7');
+    });
+
+    it('shows no zoom readout in the header at 100%', () => {
+      const { queryByTitle } = render(Widget, { props: baseProps({ zoom: 100 }) });
+
+      expect(queryByTitle('Reset zoom')).toBeNull();
+    });
+
+    it('shows the zoom percent in the header when not 100%, and resets on click', async () => {
+      const onZoomReset = vi.fn();
+      const { getByTitle } = render(Widget, { props: baseProps({ zoom: 140, onZoomReset }) });
+
+      const readout = getByTitle('Reset zoom');
+      expect(readout).toHaveTextContent('140%');
+      await fireEvent.click(readout);
+
+      expect(onZoomReset).toHaveBeenCalledOnce();
+    });
+  });
+
   describe('ticket 04: multiple files dropped on one widget', () => {
     function luaFile(name: string, contents: string): File {
       return new File([contents], name, { type: '' });

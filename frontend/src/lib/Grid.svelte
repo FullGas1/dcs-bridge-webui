@@ -7,9 +7,14 @@
   import {
     dragHasFiles, formatDropMessage, partitionDroppedFiles, type DropPartition,
   } from './luaDrop';
+  import { clampWidgetZoom, ZOOM_STEP } from './zoomStore';
   import {
     listTemplates, saveTemplate, deleteTemplate, checkConnection, setApiKey, type Template,
   } from './api';
+
+  // FEAT-DUAL-ZOOM: App owns the page zoom; Grid calls this when a Ctrl+scroll lands outside any
+  // widget (ticket 02 wires the listener).
+  let { onNudgePageZoom }: { onNudgePageZoom?: (deltaPercent: number) => void } = $props();
 
   interface WidgetRecord {
     id: number;
@@ -17,6 +22,8 @@
     // Ticket 02 (FEAT-LUA-FILE-DROP): base name of the dropped `.lua`, or a loaded template's
     // name shown as a pseudo-file-name; null for a widget typed from scratch.
     filename: string | null;
+    // FEAT-DUAL-ZOOM: this widget's own zoom percentage (100 = unzoomed).
+    zoom: number;
     // Ticket 01 (FEAT-ADAPTIVE-LAYOUT-AND-ZOOM): independent per area, replacing the old single
     // `expanded` flag that grew editor + result together.
     editorExpanded: boolean;
@@ -86,27 +93,57 @@
 
   // null = genuinely nothing saved yet -> seed one empty widget (ticket 03's default).
   // An empty array IS a legitimate prior state (every widget was closed) and is respected as-is.
+  function freshWidget(
+    fields: Partial<WidgetRecord> & Pick<WidgetRecord, 'id'>,
+  ): WidgetRecord {
+    return {
+      code: '', filename: null, zoom: 100, editorExpanded: false, resultExpanded: false, ...fields,
+    };
+  }
+
   let widgets = $state<WidgetRecord[]>(
     stored === null
-      ? [{ id: nextId++, code: '', filename: null, editorExpanded: false, resultExpanded: false }]
-      : stored.map((w) => ({
-          id: w.id, code: w.code, filename: w.filename ?? null,
-          editorExpanded: false, resultExpanded: false,
+      ? [freshWidget({ id: nextId++ })]
+      : stored.map((w) => freshWidget({
+          id: w.id, code: w.code, filename: w.filename ?? null, zoom: w.zoom ?? 100,
         })),
   );
 
   $effect(() => {
     saveWidgets(
-      widgets.map((w) => (w.filename ? { id: w.id, code: w.code, filename: w.filename }
-                                    : { id: w.id, code: w.code })),
+      widgets.map((w) => ({
+        id: w.id,
+        code: w.code,
+        ...(w.filename ? { filename: w.filename } : {}),
+        ...(w.zoom !== 100 ? { zoom: w.zoom } : {}),
+      })),
     );
   });
 
   function addWidget(): void {
-    widgets.push({
-      id: nextId++, code: '', filename: null, editorExpanded: false, resultExpanded: false,
-    });
+    widgets.push(freshWidget({ id: nextId++ }));
   }
+
+  // FEAT-DUAL-ZOOM: Ctrl+scroll zooms the widget under the pointer; anywhere else it nudges the
+  // page zoom (App owns that). One window listener, { passive: false } so preventDefault stops
+  // the browser's own zoom.
+  onMount(() => {
+    function onWheel(event: WheelEvent): void {
+      if (!event.ctrlKey) return;
+      event.preventDefault();
+      const delta = event.deltaY < 0 ? ZOOM_STEP : -ZOOM_STEP;
+      const card = (event.target as Element | null)?.closest?.('.widget') as HTMLElement | null;
+      const id = card ? Number(card.dataset.widgetId) : NaN;
+      const widget = widgets.find((w) => w.id === id);
+      if (widget) {
+        widget.zoom = clampWidgetZoom(widget.zoom + delta);
+      } else {
+        onNudgePageZoom?.(delta);
+      }
+    }
+    window.addEventListener('wheel', onWheel, { passive: false });
+    return () => window.removeEventListener('wheel', onWheel);
+  });
 
   // Ticket 04 (FEAT-LUA-FILE-DROP): `.lua` files dropped on the add button - one new widget per
   // accepted file, in file order, pre-filled and named. Focus and scroll are left alone (several
@@ -142,10 +179,7 @@
     const partition = await partitionDroppedFiles(files, 'add-button');
     reportDrop(partition);
     for (const file of partition.loaded) {
-      widgets.push({
-        id: nextId++, code: file.text, filename: file.name,
-        editorExpanded: false, resultExpanded: false,
-      });
+      widgets.push(freshWidget({ id: nextId++, code: file.text, filename: file.name }));
     }
   }
 
@@ -171,6 +205,11 @@
   function updateFilename(id: number, filename: string | null): void {
     const widget = widgets.find((w) => w.id === id);
     if (widget) widget.filename = filename;
+  }
+
+  function updateWidgetZoom(id: number, zoom: number): void {
+    const widget = widgets.find((w) => w.id === id);
+    if (widget) widget.zoom = clampWidgetZoom(zoom);
   }
 
   // Ticket 03 (FEAT-LUA-FILE-DROP): one aggregated, self-dismissing line about the last drop.
@@ -216,11 +255,13 @@
       resultExpanded={w.resultExpanded}
       initialCode={w.code}
       initialFilename={w.filename}
+      zoom={w.zoom}
       onClose={() => closeWidget(w.id)}
       onToggleEditorExpand={() => toggleEditorExpand(w.id)}
       onToggleResultExpand={() => toggleResultExpand(w.id)}
       onCodeChange={(code) => updateCode(w.id, code)}
       onFilenameChange={(filename) => updateFilename(w.id, filename)}
+      onZoomReset={() => updateWidgetZoom(w.id, 100)}
       onDropReport={reportDrop}
       {templates}
       onSaveTemplate={handleSaveTemplate}
