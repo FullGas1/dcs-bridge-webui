@@ -13,6 +13,8 @@
   }
   let { x, y, items, onClose }: Props = $props();
 
+  let menu: HTMLDivElement | undefined = $state();
+
   function choose(item: MenuItem): void {
     onClose();
     item.onSelect();
@@ -33,8 +35,6 @@
       window.removeEventListener('pointerdown', onPointerDown, true);
     };
   });
-
-  let menu: HTMLDivElement | undefined = $state();
 </script>
 
 <div

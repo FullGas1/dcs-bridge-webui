@@ -131,7 +131,10 @@
 
   function onHeaderContextMenu(event: MouseEvent): void {
     event.preventDefault();
-    contextMenu = { x: event.clientX, y: event.clientY };
+    // The menu is `position: fixed` but sits inside this widget, whose CSS `zoom` (FEAT-DUAL-ZOOM)
+    // scales fixed descendants - divide the viewport coords back out so it lands under the cursor.
+    const z = zoom / 100;
+    contextMenu = { x: event.clientX / z, y: event.clientY / z };
   }
 
   async function saveAs(): Promise<void> {
