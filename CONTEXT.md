@@ -41,6 +41,12 @@ The bearer token `dcs-serve` generates for itself on first launch (written to it
 `dcs-serve.yaml`, never printed to its console). Opaque to this project — no assumed format.
 Entered once via the first-run connection banner, then persisted locally alongside templates.
 
+**Save**:
+Writing a widget's current script back to a `.lua` **file on disk** — "Save" overwrites the file
+that was dropped into the widget, "Save as…" picks a new one. Distinct from **Template**
+("Memorize"), which stores a named copy inside this app, not a file.
+_Avoid_: conflating with Memorize.
+
 **Zoom**:
 A purely visual magnification, never a change to a script's text. Two independent kinds:
 **page zoom** scales the whole page including the banner (the floating bottom-right control, or
