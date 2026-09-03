@@ -90,6 +90,11 @@ button:disabled {
 }
 .cm-editor-container .cm-scroller {
   overflow: auto;
+  /* FIX-EDITOR-DROP-HEIGHT: .cm-scroller is a flex child of .cm-editor (a flex column). Without
+     this, its default min-height:auto keeps it at least as tall as its content, so a script
+     past the ~30-line collapsed cap never actually scrolls inside the fixed-height editor - it
+     just overflows and shows in full. min-height:0 lets it take the editor's height and clip. */
+  min-height: 0;
 }
 
 /* CodeMirror's default active-line highlight is a pale blue tint meant for a light editor

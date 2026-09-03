@@ -1,6 +1,6 @@
 # FIX-EDITOR-DROP-HEIGHT — dropped/loaded scripts blow the editor's collapsed height
 
-**Status:** merged (PR #14)
+**Status:** merged (PR #14, PR #15)
 
 **Branch:** `fix/editor-drop-height`
 
@@ -32,6 +32,14 @@ made it easy to hit.
   collapsed editor is ~8px shorter than ideal for one frame; it is never uncapped, and the next
   real measurement (on the next edit) refines it. Minimal and synchronous — no move to
   `requestMeasure`, no test-timing changes.
+- **`app.css`** (PR #15) — `.cm-scroller` gets `min-height: 0`. It is a flex child of
+  `.cm-editor` (a flex column); its default `min-height: auto` kept it at least as tall as its
+  content, so a script past the ~30-line cap never scrolled *inside* the fixed-height editor —
+  `.cm-scroller` just grew and overflowed. This is what actually made the editor still look
+  uncapped even after the height clamp above was already computing and applying `height: ~30
+  lines` correctly (confirmed from the live DOM: `.widget-editor` had `height: 537.6px` =
+  exactly 30 lines, but `.cm-scroller` was ~5200px). Pre-existing; only visible once a
+  past-the-cap script was easy to load (drop).
 - **`Grid.svelte`** — the drop message bar becomes `position: sticky; top: 0` with an accent
   left stripe and a touch more padding, so it is not missed next to a widget whose editor just
   changed and stays visible if the page ever scrolls.
