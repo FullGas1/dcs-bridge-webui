@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { cleanup, render } from '@testing-library/svelte';
+import { cleanup, fireEvent, render } from '@testing-library/svelte';
 import App from './App.svelte';
 
 vi.mock('./lib/api', () => ({
@@ -32,22 +32,32 @@ describe('App', () => {
     expect(header.compareDocumentPosition(grid) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
-  it('FEAT-DUAL-ZOOM: wraps the header + grid in a .page carrying the persisted page zoom', () => {
+  it('FEAT-DUAL-ZOOM: wraps the header + grid in a .page exposing the persisted page zoom', () => {
     localStorage.setItem('dcs-bridge-webui:zoom', '60');
     const { container, getByRole } = render(App);
 
     const page = container.querySelector('.page') as HTMLElement;
     expect(page).not.toBeNull();
-    expect(page.style.zoom).toBe('0.6');
+    expect(page.style.getPropertyValue('--page-zoom')).toBe('0.6');
     expect(page.contains(getByRole('img'))).toBe(true);
   });
 
-  it('FEAT-DUAL-ZOOM: renders the zoom control outside the zoomed .page wrapper', () => {
+  it('FEAT-DUAL-ZOOM: renders the zoom control outside the .page wrapper', () => {
     const { container, getByLabelText } = render(App);
 
     const page = container.querySelector('.page') as HTMLElement;
     const control = getByLabelText('Zoom in').closest('.zoom-control') as HTMLElement;
     expect(control).not.toBeNull();
     expect(page.contains(control)).toBe(false);
+  });
+
+  it('FEAT-DUAL-ZOOM: page zoom-out via the control lowers --page-zoom', async () => {
+    const { container, getByLabelText } = render(App);
+    const page = container.querySelector('.page') as HTMLElement;
+
+    await fireEvent.click(getByLabelText('Zoom out'));
+    await fireEvent.click(getByLabelText('Zoom out'));
+
+    expect(page.style.getPropertyValue('--page-zoom')).toBe('0.8');
   });
 });

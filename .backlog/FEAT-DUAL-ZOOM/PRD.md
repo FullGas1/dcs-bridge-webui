@@ -39,10 +39,10 @@ Two independent zoom axes, chosen by where the pointer is when `Ctrl`+scroll hap
   scroll zooms everything including the banner image, 40%–200%. The floating bottom-right control
   (its `+`/`-` and its `%`) is this global zoom.
 
-Both use the CSS `zoom` property (global on a page wrapper, per-widget on the `.widget` element),
-so a script's own text, its line-number gutter, its collapsed-height cap, and — for the global
-axis — the banner all scale together with one declaration. Neither ever touches a script's
-content or undo history.
+The per-widget axis is CSS `zoom` on the `.widget`; the page axis is a `--page-zoom` custom
+property on a `.page` wrapper, consumed by the banner image width and the editor/result
+font-size (CSS `zoom` on the page wrapper was tried and is a live no-op — see ADR 0006). Neither
+axis ever touches a script's content or undo history.
 
 ## User Stories
 
@@ -83,17 +83,19 @@ content or undo history.
 
 ## Implementation Decisions
 
-### Two axes, CSS `zoom`
+### Two axes
 
-- **Global page zoom** — CSS `zoom` on a new page wrapper element that contains the branding
-  header and the grid, but **not** the floating control. Range **40–200**, step 10, default 100.
-  Persisted under the existing `dcs-bridge-webui:zoom` key.
-- **Per-widget zoom** — CSS `zoom` on the individual `.widget` element (inline style). Range
-  **40–250**, step 10, default 100. The two axes compose (a widget at 150% inside a page at 60%
-  renders at 0.9×).
-- **`FEAT-ADAPTIVE-LAYOUT-AND-ZOOM`'s `--zoom-factor` custom property and the
-  `font-size: calc(… * var(--zoom-factor))` rules are removed.** CSS `zoom` scales font-size (and
-  everything else) on its own. See ADR 0006.
+- **Global page zoom** — a `--page-zoom` custom property on a new `.page` wrapper (branding
+  header + grid, **not** the floating control). Consumed explicitly: `.branding-header img`
+  `width: calc(100% * var(--page-zoom))` (so the banner shrinks/grows) and the editor/result
+  `font-size: calc(Npx * var(--page-zoom))`. Range **40–200**, step 10, default 100. Persisted
+  under the existing `dcs-bridge-webui:zoom` key. (CSS `zoom` on this wrapper was the first cut
+  and is a live no-op — ADR 0006.)
+- **Per-widget zoom** — CSS `zoom` on the individual `.widget` element (inline style). Its height
+  is content-driven so `zoom` genuinely scales it. Range **40–250**, step 10, default 100. The
+  two axes compose.
+- `FEAT-ADAPTIVE-LAYOUT-AND-ZOOM`'s `--zoom-factor` is renamed to `--page-zoom` and moved from
+  `:root` (set by `ZoomControl`) to the `.page` wrapper (set by `App`).
 
 ### Where the pointer is
 
@@ -126,11 +128,13 @@ content or undo history.
   `editorHeightPx` proportionally (expected); ticket 02 verifies and, only if needed, adds a
   `remeasure()` the widget calls on zoom change.
 
-### Not using `transform: scale()`
+### Mechanism choices
 
-`transform: scale()` doesn't reflow (siblings overlap), needs `transform-origin` juggling, and
-leaves scrollbars at the unscaled size. CSS `zoom` reflows like the browser's own zoom, which is
-exactly the mental model here. Both Chrome and Firefox (126+) support it; this app targets both.
+`transform: scale()` doesn't reflow (siblings overlap) and rebases `position: fixed`. CSS `zoom`
+works where an element's size is content-driven (the per-widget axis) but is a no-op on a
+viewport-filling wrapper (the page axis) — the browser re-inflates the layout under it, so
+`width: 100%` content (the banner) never changes size. Hence the page axis is an explicit
+`--page-zoom` variable. See ADR 0006.
 
 ## Testing Decisions
 
@@ -165,10 +169,13 @@ is the HITL ticket's job.
 
 ## Further Notes
 
-- ADR 0006 records the switch from the parent lot's single font-size `--zoom-factor` to two
-  CSS-`zoom` axes and why.
+- ADR 0006 records the two axes and why. **Post-PR #17 correction (PR #18):** CSS `zoom` on the
+  page wrapper turned out to be a live no-op (a viewport-filling wrapper re-inflates under it, so
+  the banner never changed size). The page axis was reworked to a `--page-zoom` custom property
+  consumed explicitly by the banner image width and the editor/result font-size; the per-widget
+  axis stays CSS `zoom` (verified working live). ADR 0006 and the sections above reflect the
+  corrected design.
 - CONTEXT.md gains a **Zoom** entry (page zoom vs. widget zoom).
-- If CSS `zoom` turns out to break CodeMirror's line-height measurement under a non-100% widget
-  (making the ~30-line cap drift after an edit), the follow-up is small — divide the measured
-  line height by the effective widget zoom in `reportHeight`, or `remeasure()` on zoom change —
-  and mirrors how `FIX-EDITOR-DROP-HEIGHT` followed `FEAT-LUA-FILE-DROP`.
+- `reportHeight`'s collapsed-editor cap recomputes only on a document change, so a past-the-cap
+  editor keeps a stale height after a page-zoom change until the next edit — a pre-existing limit
+  of the adaptive-height machinery, unchanged here.

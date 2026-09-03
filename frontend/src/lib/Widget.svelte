@@ -377,8 +377,9 @@
     border-top: 1px solid var(--border);
     padding: 6px 8px;
     font-family: var(--mono);
-    /* FEAT-DUAL-ZOOM: plain 13px - the page and per-widget zoom are CSS `zoom` now. */
-    font-size: 13px;
+    /* FEAT-DUAL-ZOOM: scaled by the page zoom (App .page wrapper's --page-zoom); the widget's
+       own CSS `zoom` composes on top. */
+    font-size: calc(13px * var(--page-zoom, 1));
     overflow: auto;
     flex: none;
   }
