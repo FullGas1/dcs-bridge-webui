@@ -1,6 +1,6 @@
 # FEAT-DUAL-ZOOM — per-widget zoom on hover, global page zoom outside, wider zoom-out
 
-**Status:** grilled (autonomous) — PRD + tickets, ready to implement
+**Status:** merged (PR #17) — tickets 01-03; ticket 04 (HITL) pending
 
 **Branch:** `feature/dual-zoom`
 
