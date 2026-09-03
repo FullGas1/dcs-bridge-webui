@@ -584,6 +584,148 @@ describe('Widget', () => {
     });
   });
 
+  describe('FEAT-SAVE-WIDGET-FILE: header right-click menu', () => {
+    afterEach(() => {
+      delete (window as { showSaveFilePicker?: unknown }).showSaveFilePicker;
+    });
+
+    it('opens the menu on a header right-click and suppresses the native one', async () => {
+      const { container } = render(Widget, { props: baseProps() });
+
+      const evt = await fireEvent.contextMenu(container.querySelector('.widget-header')!);
+
+      expect(evt).toBe(false); // preventDefault called
+      expect(container.querySelector('.widget-context-menu')).not.toBeNull();
+    });
+
+    it('does not open the menu on an editor right-click', async () => {
+      const { container } = render(Widget, { props: baseProps() });
+
+      await fireEvent.contextMenu(container.querySelector('.cm-content')!);
+
+      expect(container.querySelector('.widget-context-menu')).toBeNull();
+    });
+
+    it('offers only "Save as…" for a widget with no dropped file', async () => {
+      const { container, getByText, queryByText } = render(Widget, { props: baseProps() });
+
+      await fireEvent.contextMenu(container.querySelector('.widget-header')!);
+
+      expect(getByText('Save as…')).toBeInTheDocument();
+      expect(queryByText('Save')).toBeNull();
+    });
+
+    function droppedHandle(name: string) {
+      const chunks: string[] = [];
+      const writable = { write: (t: string) => void chunks.push(t), close: () => {} };
+      const handle = { kind: 'file', name, createWritable: () => Promise.resolve(writable) };
+      const file = new File(['x'], name, { type: '' });
+      return {
+        written: () => chunks.join(''),
+        dt: {
+          files: [file],
+          types: ['Files'],
+          items: [{
+            kind: 'file',
+            getAsFile: () => file,
+            getAsFileSystemHandle: () => Promise.resolve(handle),
+          }],
+        },
+      };
+    }
+
+    it('offers "Save" once a .lua drop yielded a writable handle, and writes to it', async () => {
+      const h = droppedHandle('patrol.lua');
+      const { container, getByText, queryByText } = render(Widget, {
+        props: baseProps({ number: 1 }),
+      });
+
+      await fireEvent.drop(container.querySelector('.widget')!, { dataTransfer: h.dt });
+      await flush();
+      await fireEvent.contextMenu(container.querySelector('.widget-header')!);
+
+      expect(getByText('Save')).toBeInTheDocument();
+      expect(getByText('Save as…')).toBeInTheDocument();
+
+      await fireEvent.click(getByText('Save'));
+      await flush();
+      expect(h.written()).toBe('x');
+    });
+
+    it('falls back to "Save as…" when "Save" hits a permission failure', async () => {
+      const file = new File(['x'], 'p.lua', { type: '' });
+      const deadHandle = {
+        kind: 'file', name: 'p.lua',
+        createWritable: () => Promise.reject(new DOMException('no', 'NotAllowedError')),
+      };
+      const pickerWritable = { write: vi.fn(), close: vi.fn() };
+      const showSaveFilePicker = vi.fn().mockResolvedValue({
+        name: 'relocated.lua', createWritable: () => Promise.resolve(pickerWritable),
+      });
+      (window as { showSaveFilePicker?: unknown }).showSaveFilePicker = showSaveFilePicker;
+
+      const { container, getByText } = render(Widget, { props: baseProps() });
+      await fireEvent.drop(container.querySelector('.widget')!, {
+        dataTransfer: {
+          files: [file], types: ['Files'],
+          items: [{ kind: 'file', getAsFile: () => file, getAsFileSystemHandle: () => Promise.resolve(deadHandle) }],
+        },
+      });
+      await flush();
+      await fireEvent.contextMenu(container.querySelector('.widget-header')!);
+      await fireEvent.click(getByText('Save'));
+      await flush();
+
+      expect(showSaveFilePicker).toHaveBeenCalled();
+      expect(pickerWritable.write).toHaveBeenCalled();
+    });
+
+    it('does not offer "Save" when the drop yielded no handle (Firefox)', async () => {
+      const file = new File(['x'], 'p.lua', { type: '' });
+      const { container, queryByText } = render(Widget, { props: baseProps() });
+
+      await fireEvent.drop(container.querySelector('.widget')!, {
+        dataTransfer: { files: [file], types: ['Files'], items: [{ kind: 'file', getAsFile: () => file }] },
+      });
+      await flush();
+      await fireEvent.contextMenu(container.querySelector('.widget-header')!);
+
+      expect(queryByText('Save')).toBeNull();
+    });
+
+    it('drops "Save" again after a template is loaded', async () => {
+      const h = droppedHandle('patrol.lua');
+      const { container, getByText, queryByText } = render(Widget, { props: baseProps() });
+
+      await fireEvent.drop(container.querySelector('.widget')!, { dataTransfer: h.dt });
+      await flush();
+      await fireEvent.click(getByText('Templates'));
+      await fireEvent.click(getByText('check menu'));
+      await fireEvent.contextMenu(container.querySelector('.widget-header')!);
+
+      expect(queryByText('Save')).toBeNull();
+    });
+
+    it('"Save as…" writes the editor text and updates the header name', async () => {
+      const chunks: string[] = [];
+      const writable = { write: (t: string) => void chunks.push(t), close: () => {} };
+      (window as { showSaveFilePicker?: unknown }).showSaveFilePicker = vi
+        .fn()
+        .mockResolvedValue({ name: 'saved-as.lua', createWritable: () => Promise.resolve(writable) });
+
+      const { container, getByText } = render(Widget, {
+        props: baseProps({ number: 2, initialCode: 'return patrol()' }),
+      });
+
+      await fireEvent.contextMenu(container.querySelector('.widget-header')!);
+      await fireEvent.click(getByText('Save as…'));
+      await flush();
+
+      expect(chunks.join('')).toBe('return patrol()');
+      expect(getByText('Widget 2 — saved-as.lua')).toBeInTheDocument();
+    });
+  });
+
   describe('FEAT-DUAL-ZOOM: per-widget zoom', () => {
     it('applies no zoom style at 100%', () => {
       const { container } = render(Widget, { props: baseProps({ zoom: 100 }) });

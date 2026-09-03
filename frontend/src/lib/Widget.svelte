@@ -3,8 +3,10 @@
   import CodeMirrorEditor from './CodeMirrorEditor.svelte';
   import ExpandToggle from './ExpandToggle.svelte';
   import TemplateDropdown from './TemplateDropdown.svelte';
+  import WidgetContextMenu from './WidgetContextMenu.svelte';
   import { MAX_COLLAPSED_LINES } from './layoutConstants';
   import { dragHasFiles, partitionDroppedFiles, type DropPartition } from './luaDrop';
+  import { overwrite, saveTextAs, suggestedFileName } from './widgetSave';
   import type { Template } from './api';
   import type { InjectionQueue, Activity, LastRun, JobHandle } from './injectionQueue';
 
@@ -115,12 +117,54 @@
     onFilenameChange?.(next);
   }
 
+  // FEAT-SAVE-WIDGET-FILE: a writable handle to the file this widget's script came from, when the
+  // browser can give one (Chromium). Session-scoped - gone on reload. Set by a dropped `.lua`
+  // (ticket 02) or by a native "Save as…"; cleared when the contents stop matching that file.
+  let fileHandle = $state<FileSystemFileHandle | null>(null);
+  // The right-click menu's screen position, or null when closed.
+  let contextMenu = $state<{ x: number; y: number } | null>(null);
+
+  const contextMenuItems = $derived([
+    ...(fileHandle ? [{ label: 'Save', onSelect: saveToHandle }] : []),
+    { label: 'Save as…', onSelect: saveAs },
+  ]);
+
+  function onHeaderContextMenu(event: MouseEvent): void {
+    event.preventDefault();
+    // The menu is `position: fixed` but sits inside this widget, whose CSS `zoom` (FEAT-DUAL-ZOOM)
+    // scales fixed descendants - divide the viewport coords back out so it lands under the cursor.
+    const z = zoom / 100;
+    contextMenu = { x: event.clientX / z, y: event.clientY / z };
+  }
+
+  async function saveAs(): Promise<void> {
+    const result = await saveTextAs(code, suggestedFileName(filename, number));
+    if (result.kind === 'cancelled') return;
+    if (result.kind === 'picked') fileHandle = result.handle;
+    setFilename(result.name);
+  }
+
+  async function saveToHandle(): Promise<void> {
+    if (!fileHandle) return;
+    try {
+      await overwrite(fileHandle, code);
+    } catch (err) {
+      // Permission for this file lapsed - fall back to picking a location.
+      if (err instanceof DOMException && err.name === 'NotAllowedError') {
+        await saveAs();
+        return;
+      }
+      throw err;
+    }
+  }
+
   function loadTemplate(template: Template): void {
     editor.setValue(template.code);
     code = template.code;
     onCodeChange?.(template.code);
     // Ticket 02: the contents no longer come from a file - show the template's name instead.
     setFilename(template.name);
+    fileHandle = null;
     editor.focus();
   }
 
@@ -157,12 +201,25 @@
     event.stopPropagation();
     dragDepth = 0;
     const files = event.dataTransfer?.files;
-    if (files && files.length > 0) void loadDroppedFiles(Array.from(files));
+    if (!files || files.length === 0) return;
+    // FEAT-SAVE-WIDGET-FILE: capture writable handles here, synchronously - the DataTransferItem
+    // list is only valid during the event, though the promises it hands back resolve later.
+    // Chromium only; elsewhere `getAsFileSystemHandle` is undefined and we get no handle.
+    const handlesByName = new Map<string, Promise<FileSystemHandle | null>>();
+    for (const item of Array.from(event.dataTransfer?.items ?? [])) {
+      if (item.kind !== 'file' || !item.getAsFileSystemHandle) continue;
+      const named = item.getAsFile();
+      if (named) handlesByName.set(named.name, item.getAsFileSystemHandle());
+    }
+    void loadDroppedFiles(Array.from(files), handlesByName);
   }
 
   // Ticket 04: a widget holds one script - only the first accepted `.lua` is loaded, the rest are
   // reported as ignored by the aggregated message.
-  async function loadDroppedFiles(files: File[]): Promise<void> {
+  async function loadDroppedFiles(
+    files: File[],
+    handlesByName: Map<string, Promise<FileSystemHandle | null>>,
+  ): Promise<void> {
     const partition = await partitionDroppedFiles(files, 'widget');
     onDropReport?.(partition);
     const first = partition.loaded[0];
@@ -171,6 +228,9 @@
     code = first.text;
     onCodeChange?.(first.text);
     setFilename(first.name);
+    // FEAT-SAVE-WIDGET-FILE: keep the handle for the file we actually loaded (if any).
+    const handle = await (handlesByName.get(first.name) ?? Promise.resolve(null)).catch(() => null);
+    fileHandle = handle && handle.kind === 'file' ? (handle as FileSystemFileHandle) : null;
     editor.focus();
   }
 
@@ -207,7 +267,10 @@
   ondragovercapture={onWidgetDragOverCapture}
   ondropcapture={onWidgetDropCapture}
 >
-  <div class="widget-header">
+  <!-- svelte-ignore a11y_no_static_element_interactions -->
+  <!-- Right-click is a progressive enhancement over the header's own buttons; no keyboard
+       equivalent by design (FEAT-SAVE-WIDGET-FILE: menu only, no Ctrl+S yet). -->
+  <div class="widget-header" oncontextmenu={onHeaderContextMenu}>
     <span class="widget-number">{filename ? `Widget ${number} — ${filename}` : `Widget ${number}`}</span>
     {#if zoom !== 100}
       <button type="button" class="widget-zoom" onclick={() => onZoomReset?.()} title="Reset zoom">
@@ -288,6 +351,15 @@
         </div>
       </form>
     </div>
+  {/if}
+
+  {#if contextMenu}
+    <WidgetContextMenu
+      x={contextMenu.x}
+      y={contextMenu.y}
+      items={contextMenuItems}
+      onClose={() => (contextMenu = null)}
+    />
   {/if}
 </div>
 
