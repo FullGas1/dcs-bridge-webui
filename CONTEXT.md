@@ -40,3 +40,10 @@ proxies. Not part of this codebase — installed and run independently by the us
 The bearer token `dcs-serve` generates for itself on first launch (written to its own
 `dcs-serve.yaml`, never printed to its console). Opaque to this project — no assumed format.
 Entered once via the first-run connection banner, then persisted locally alongside templates.
+
+**Zoom**:
+A purely visual magnification, never a change to a script's text. Two independent kinds:
+**page zoom** scales the whole page including the banner (the floating bottom-right control, or
+Ctrl+scroll away from any widget); **widget zoom** scales one widget (Ctrl+scroll over it). Both
+persist; widget zoom rides in the same local widget session as the scripts.
+_Avoid_: "font size", "scale" — say zoom.
