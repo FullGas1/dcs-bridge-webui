@@ -1,6 +1,6 @@
 # FEAT-SAVE-WIDGET-FILE — save a widget's script back to a `.lua` file
 
-**Status:** merged (PR #24) — tickets 01-02; ticket 03 (HITL) pending
+**Status:** delivered (PR #24) — verified in Chrome + Firefox
 
 **Branch:** `feature/save-widget-to-file`
 
@@ -13,7 +13,7 @@ From `.backlog/roadmap.md` "Save a widget's script back to a `.lua` file". Build
 |---|---|---|
 | `01-save-as` | done | 01 — "Save as…" from a header right-click (picker or download) |
 | `02-save-overwrite` | done | 02 — "Save" overwrites the dropped file in place (Chromium) |
-| `03-manual-verification` | todo | 03 — Manual verification (HITL), Chrome + Firefox |
+| `03-manual-verification` | done | 03 — Manual verification (HITL), Chrome + Firefox |
 
 ## Problem Statement
 
