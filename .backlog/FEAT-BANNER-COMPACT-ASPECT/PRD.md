@@ -87,3 +87,8 @@ module, both scenes, the injection symbol) still fully legible.
 - Originates from a direct, standalone user complaint ("le bandeau prend trop de place
   verticalement") — grilled per `CLAUDE.md`'s standing rule even though the eventual
   implementation turned out to need zero source-code changes.
+- Follow-up (`feat/banner-hires-asset`): the user supplied a higher-resolution recomposition of
+  the same banner (2240×479 — 2× the 1024×219 delivered here, identical composition and ~4.68:1
+  aspect). Re-encoded to progressive JPEG q85 (712 KB → 194 KB) and swapped in place at
+  `frontend/public/banner.jpg` — still a pure asset swap, no code change, `BrandingHeader.svelte`
+  unchanged. Full frontend suite (100 tests), `svelte-check`, and `vite build` all green.
