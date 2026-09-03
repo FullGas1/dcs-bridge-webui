@@ -69,4 +69,28 @@ describe('widgetSession', () => {
 
     expect(loadWidgets()).toBeNull();
   });
+
+  it('FEAT-DUAL-ZOOM: round-trips a per-widget zoom', () => {
+    saveWidgets([{ id: 1, code: 'return 1', zoom: 140 }]);
+
+    expect(loadWidgets()).toEqual([{ id: 1, code: 'return 1', zoom: 140 }]);
+  });
+
+  it('FEAT-DUAL-ZOOM: loads an entry saved before the zoom field existed', () => {
+    localStorage.setItem(
+      'dcs-bridge-webui:widgets',
+      JSON.stringify([{ id: 1, code: 'return 1' }]),
+    );
+
+    expect(loadWidgets()).toEqual([{ id: 1, code: 'return 1' }]);
+  });
+
+  it('FEAT-DUAL-ZOOM: returns null when a stored zoom is not a number', () => {
+    localStorage.setItem(
+      'dcs-bridge-webui:widgets',
+      JSON.stringify([{ id: 1, code: 'return 1', zoom: 'big' }]),
+    );
+
+    expect(loadWidgets()).toBeNull();
+  });
 });

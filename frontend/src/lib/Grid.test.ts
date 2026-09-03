@@ -432,6 +432,83 @@ describe('Grid', () => {
     });
   });
 
+  describe('FEAT-DUAL-ZOOM: Ctrl+scroll routing', () => {
+    function widgetEl(container: HTMLElement): HTMLElement {
+      return container.querySelector('.widget') as HTMLElement;
+    }
+
+    it('Ctrl+wheel over a widget zooms that widget only', async () => {
+      const onNudgePageZoom = vi.fn();
+      const { container } = render(Grid, { props: { onNudgePageZoom } });
+      await flush();
+
+      await fireEvent.wheel(widgetEl(container), { ctrlKey: true, deltaY: -100 });
+
+      expect(widgetEl(container).style.zoom).toBe('1.1');
+      expect(onNudgePageZoom).not.toHaveBeenCalled();
+    });
+
+    it('Ctrl+wheel-down over a widget lowers its zoom and clamps at 40%', async () => {
+      const { container } = render(Grid);
+      await flush();
+
+      for (let i = 0; i < 10; i++) {
+        await fireEvent.wheel(widgetEl(container), { ctrlKey: true, deltaY: 100 });
+      }
+
+      expect(widgetEl(container).style.zoom).toBe('0.4');
+    });
+
+    it('Ctrl+wheel outside every widget nudges the page zoom, not a widget', async () => {
+      const onNudgePageZoom = vi.fn();
+      const { container } = render(Grid, { props: { onNudgePageZoom } });
+      await flush();
+
+      await fireEvent.wheel(container, { ctrlKey: true, deltaY: -100 });
+
+      expect(onNudgePageZoom).toHaveBeenCalledWith(10);
+      expect(widgetEl(container).style.zoom).toBe('');
+    });
+
+    it('prevents the browser default on a Ctrl+wheel but not on a plain wheel', async () => {
+      const { container } = render(Grid);
+      await flush();
+
+      const ctrlNotCancelled = await fireEvent.wheel(
+        widgetEl(container),
+        { ctrlKey: true, deltaY: -100 },
+      );
+      const plainNotCancelled = await fireEvent.wheel(
+        widgetEl(container),
+        { ctrlKey: false, deltaY: -100 },
+      );
+
+      expect(ctrlNotCancelled).toBe(false);
+      expect(plainNotCancelled).toBe(true);
+    });
+
+    it('keeps two widgets zoomed independently, and persists a widget zoom across reload', async () => {
+      const first = render(Grid);
+      await flush();
+      await fireEvent.click(first.getByLabelText('Add widget'));
+      const cards = () => first.container.querySelectorAll('.widget');
+
+      await fireEvent.wheel(cards()[0]!, { ctrlKey: true, deltaY: -100 });
+      await fireEvent.wheel(cards()[1]!, { ctrlKey: true, deltaY: 100 });
+
+      expect((cards()[0] as HTMLElement).style.zoom).toBe('1.1');
+      expect((cards()[1] as HTMLElement).style.zoom).toBe('0.9');
+
+      cleanup();
+      const reloaded = render(Grid);
+      await flush();
+      const zooms = [...reloaded.container.querySelectorAll('.widget')].map(
+        (w) => (w as HTMLElement).style.zoom,
+      );
+      expect(zooms).toEqual(['1.1', '0.9']);
+    });
+  });
+
   describe('ticket 04: dropping files on the add button', () => {
     function luaFile(name: string, contents: string): File {
       return new File([contents], name, { type: '' });

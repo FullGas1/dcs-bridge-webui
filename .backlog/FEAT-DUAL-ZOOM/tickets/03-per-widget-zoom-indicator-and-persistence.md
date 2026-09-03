@@ -1,6 +1,6 @@
 # 03 — Header indicator + reset, persisted per widget
 
-**Status:** todo
+**Status:** done
 
 ## Parent
 
@@ -21,17 +21,17 @@ Make a non-100% widget zoom visible and undoable, and remember it across reloads
 
 ## Acceptance criteria
 
-- [ ] A widget at 100% shows no zoom readout in its header.
-- [ ] A widget zoomed to 140% shows `140%` in its header; clicking it returns the widget to 100%
+- [x] A widget at 100% shows no zoom readout in its header.
+- [x] A widget zoomed to 140% shows `140%` in its header; clicking it returns the widget to 100%
       and hides the readout.
-- [ ] A widget's zoom round-trips a reload (persisted in the `dcs-bridge-webui:widgets` entry).
-- [ ] A widget session saved before this field loads with every widget at 100% — no crash, no
+- [x] A widget's zoom round-trips a reload (persisted in the `dcs-bridge-webui:widgets` entry).
+- [x] A widget session saved before this field loads with every widget at 100% — no crash, no
       lost widgets.
-- [ ] A stored `zoom` that isn't a number makes `loadWidgets` return null, like a bad `filename`.
-- [ ] `widgetSession.test.ts` extended: `zoom` round-trips; absent still loads; non-number
+- [x] A stored `zoom` that isn't a number makes `loadWidgets` return null, like a bad `filename`.
+- [x] `widgetSession.test.ts` extended: `zoom` round-trips; absent still loads; non-number
       rejected.
-- [ ] `Widget.test.ts`: header readout shows/hides on the 100 boundary; click resets.
-- [ ] `Grid.test.ts`: a wheel-zoomed widget persists its zoom and restores it on reload.
+- [x] `Widget.test.ts`: header readout shows/hides on the 100 boundary; click resets.
+- [x] `Grid.test.ts`: a wheel-zoomed widget persists its zoom and restores it on reload.
 
 ## Blocked by
 

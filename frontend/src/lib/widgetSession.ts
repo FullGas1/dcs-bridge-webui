@@ -7,6 +7,9 @@ export interface StoredWidget {
   // a loaded template's name shown as a pseudo-file-name. Absent for widgets typed from scratch
   // and for sessions saved before this field existed.
   filename?: string;
+  // FEAT-DUAL-ZOOM: this widget's own zoom percentage. Absent when it is at 100% and for
+  // sessions saved before this field existed.
+  zoom?: number;
 }
 
 /**
@@ -39,6 +42,8 @@ function isStoredWidget(value: unknown): value is StoredWidget {
     typeof (value as StoredWidget).id === 'number' &&
     typeof (value as StoredWidget).code === 'string' &&
     ((value as StoredWidget).filename === undefined ||
-      typeof (value as StoredWidget).filename === 'string')
+      typeof (value as StoredWidget).filename === 'string') &&
+    ((value as StoredWidget).zoom === undefined ||
+      typeof (value as StoredWidget).zoom === 'number')
   );
 }

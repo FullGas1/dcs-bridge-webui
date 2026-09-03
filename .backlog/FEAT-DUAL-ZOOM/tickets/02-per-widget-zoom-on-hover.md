@@ -1,6 +1,6 @@
 # 02 — Per-widget zoom on Ctrl+scroll over a widget
 
-**Status:** todo
+**Status:** done
 
 ## Parent
 
@@ -32,17 +32,17 @@ whole page (ticket 01's wrapper).
 
 ## Acceptance criteria
 
-- [ ] `Ctrl`+wheel-up with the event target inside a `.widget` raises that widget's
+- [x] `Ctrl`+wheel-up with the event target inside a `.widget` raises that widget's
       `style="zoom"` by 0.1 and leaves the page wrapper's zoom unchanged.
-- [ ] `Ctrl`+wheel-down inside a widget lowers it; it clamps at 0.4 and 2.5.
-- [ ] `Ctrl`+wheel with the target outside every widget changes the page wrapper's zoom and no
+- [x] `Ctrl`+wheel-down inside a widget lowers it; it clamps at 0.4 and 2.5.
+- [x] `Ctrl`+wheel with the target outside every widget changes the page wrapper's zoom and no
       widget's.
-- [ ] Every `Ctrl`+wheel calls `preventDefault()`; a wheel without `Ctrl` changes nothing and is
+- [x] Every `Ctrl`+wheel calls `preventDefault()`; a wheel without `Ctrl` changes nothing and is
       not prevented.
-- [ ] Two widgets zoomed differently keep independent `style="zoom"` values.
-- [ ] `Grid.test.ts` covers the routing (inside vs outside), the clamps, and `preventDefault`.
-- [ ] `Widget.test.ts` covers `initialZoom` → `style="zoom"`.
-- [ ] Full frontend suite, `svelte-check`, `vite build` green.
+- [x] Two widgets zoomed differently keep independent `style="zoom"` values.
+- [x] `Grid.test.ts` covers the routing (inside vs outside), the clamps, and `preventDefault`.
+- [x] `Widget.test.ts` covers `initialZoom` → `style="zoom"`.
+- [x] Full frontend suite, `svelte-check`, `vite build` green.
 
 ## Blocked by
 

@@ -12,8 +12,8 @@ from `.backlog/roadmap.md` "Rework the zoom rules".
 | Ticket | Status | Title |
 |---|---|---|
 | `01-global-page-zoom-via-css-zoom` | done | 01 — Global page zoom (banner included) via CSS `zoom`, wider range |
-| `02-per-widget-zoom-on-hover` | todo | 02 — Per-widget zoom on Ctrl+scroll over a widget |
-| `03-per-widget-zoom-indicator-and-persistence` | todo | 03 — Header indicator + reset, persisted per widget |
+| `02-per-widget-zoom-on-hover` | done | 02 — Per-widget zoom on Ctrl+scroll over a widget |
+| `03-per-widget-zoom-indicator-and-persistence` | done | 03 — Header indicator + reset, persisted per widget |
 | `04-manual-verification` | todo | 04 — Manual verification (HITL), Chrome + Firefox |
 
 ## Problem Statement
