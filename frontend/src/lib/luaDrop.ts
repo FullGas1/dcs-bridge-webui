@@ -3,7 +3,7 @@
 // validation, the multi-file partition for a widget vs. the add button, and the aggregated
 // transient message.
 
-/** Hardcoded for now — made configurable by the future app-settings-panel lot (see roadmap). */
+/** A dropped `.lua` bigger than this is refused (protects localStorage and the editor). */
 export const MAX_LUA_FILE_BYTES = 512 * 1024;
 
 export type LuaDropRejection = 'not-lua' | 'too-large';
