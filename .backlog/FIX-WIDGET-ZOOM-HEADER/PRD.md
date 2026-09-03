@@ -1,6 +1,6 @@
 # FIX-WIDGET-ZOOM-HEADER — per-widget zoom scales the editor + result only, not the header
 
-**Status:** merged (PR #26); ticket 02 (HITL) pending
+**Status:** delivered (PR #26) — verified in Chrome + Firefox
 
 **Branch:** `fix/widget-zoom-body-only`
 
