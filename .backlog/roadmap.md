@@ -51,3 +51,15 @@ validation and what happens on a bad value; whether "reset to defaults" is offer
 panel is a modal, a drawer, or an inline section; which of the existing hardcoded constants
 (`MAX_COLLAPSED_LINES`, queue behaviour, etc.) are in scope vs. deliberately left alone.
 
+## "Save as" a widget's script to a `.lua` file
+
+A per-widget "Save as" button that opens the OS file-save picker and pre-fills the file name with
+the widget's remembered source file name (set when a `.lua` was drag-and-dropped into it — see
+the drag-and-drop entry, which is what first gives a widget an associated file name). Lets the
+user round-trip: drop a script in, edit it live against the mission, save it back to disk.
+
+Open questions for grilling: browser save-picker capability vs. a plain download (the app is a
+local packaged exe, not a sandboxed web page); what the default name is for a widget that was
+typed from scratch (no remembered name); whether saving updates the widget's remembered name;
+whether it writes through the backend (real filesystem) or the browser download folder.
+
