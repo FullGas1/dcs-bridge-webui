@@ -12,7 +12,7 @@ From `.backlog/roadmap.md` "Save a widget's script back to a `.lua` file". Build
 | Ticket | Status | Title |
 |---|---|---|
 | `01-save-as` | done | 01 — "Save as…" from a header right-click (picker or download) |
-| `02-save-overwrite` | todo | 02 — "Save" overwrites the dropped file in place (Chromium) |
+| `02-save-overwrite` | done | 02 — "Save" overwrites the dropped file in place (Chromium) |
 | `03-manual-verification` | todo | 03 — Manual verification (HITL), Chrome + Firefox |
 
 ## Problem Statement

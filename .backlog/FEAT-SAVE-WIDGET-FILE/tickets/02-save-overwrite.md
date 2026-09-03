@@ -1,6 +1,6 @@
 # 02 — "Save" overwrites the dropped file in place (Chromium)
 
-**Status:** todo
+**Status:** done
 
 ## Parent
 
@@ -27,19 +27,19 @@ dialog, no confirm.
 
 ## Acceptance criteria
 
-- [ ] After a `.lua` is dropped on a widget in a browser that yields a handle, the menu shows
+- [x] After a `.lua` is dropped on a widget in a browser that yields a handle, the menu shows
       both "Save" and "Save as…".
-- [ ] After a `.lua` is dropped in a browser that does not (Firefox), only "Save as…" shows.
-- [ ] For a widget typed from scratch, only "Save as…" shows.
-- [ ] "Save" writes exactly the editor's current text to the dropped file with no dialog and no
+- [x] After a `.lua` is dropped in a browser that does not (Firefox), only "Save as…" shows.
+- [x] For a widget typed from scratch, only "Save as…" shows.
+- [x] "Save" writes exactly the editor's current text to the dropped file with no dialog and no
       confirmation.
-- [ ] Dropping a different `.lua` on the widget re-points "Save" at the new file; loading a
+- [x] Dropping a different `.lua` on the widget re-points "Save" at the new file; loading a
       template removes "Save".
-- [ ] A permission failure on "Save" falls back to the "Save as…" flow rather than erroring.
-- [ ] `widgetSave.test.ts` covers `overwrite` (write + close, and the `NotAllowedError`
+- [x] A permission failure on "Save" falls back to the "Save as…" flow rather than erroring.
+- [x] `widgetSave.test.ts` covers `overwrite` (write + close, and the `NotAllowedError`
       fallback); `Widget.test.ts` covers the menu-item visibility and that "Save" writes to the
       captured (mocked) handle.
-- [ ] Full frontend suite, `svelte-check`, `vite build` green.
+- [x] Full frontend suite, `svelte-check`, `vite build` green.
 
 ## Blocked by
 

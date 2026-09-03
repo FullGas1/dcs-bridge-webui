@@ -198,12 +198,25 @@
     event.stopPropagation();
     dragDepth = 0;
     const files = event.dataTransfer?.files;
-    if (files && files.length > 0) void loadDroppedFiles(Array.from(files));
+    if (!files || files.length === 0) return;
+    // FEAT-SAVE-WIDGET-FILE: capture writable handles here, synchronously - the DataTransferItem
+    // list is only valid during the event, though the promises it hands back resolve later.
+    // Chromium only; elsewhere `getAsFileSystemHandle` is undefined and we get no handle.
+    const handlesByName = new Map<string, Promise<FileSystemHandle | null>>();
+    for (const item of Array.from(event.dataTransfer?.items ?? [])) {
+      if (item.kind !== 'file' || !item.getAsFileSystemHandle) continue;
+      const named = item.getAsFile();
+      if (named) handlesByName.set(named.name, item.getAsFileSystemHandle());
+    }
+    void loadDroppedFiles(Array.from(files), handlesByName);
   }
 
   // Ticket 04: a widget holds one script - only the first accepted `.lua` is loaded, the rest are
   // reported as ignored by the aggregated message.
-  async function loadDroppedFiles(files: File[]): Promise<void> {
+  async function loadDroppedFiles(
+    files: File[],
+    handlesByName: Map<string, Promise<FileSystemHandle | null>>,
+  ): Promise<void> {
     const partition = await partitionDroppedFiles(files, 'widget');
     onDropReport?.(partition);
     const first = partition.loaded[0];
@@ -212,6 +225,9 @@
     code = first.text;
     onCodeChange?.(first.text);
     setFilename(first.name);
+    // FEAT-SAVE-WIDGET-FILE: keep the handle for the file we actually loaded (if any).
+    const handle = await (handlesByName.get(first.name) ?? Promise.resolve(null)).catch(() => null);
+    fileHandle = handle && handle.kind === 'file' ? (handle as FileSystemFileHandle) : null;
     editor.focus();
   }
 
