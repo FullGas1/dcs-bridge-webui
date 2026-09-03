@@ -131,10 +131,7 @@
 
   function onHeaderContextMenu(event: MouseEvent): void {
     event.preventDefault();
-    // The menu is `position: fixed` but sits inside this widget, whose CSS `zoom` (FEAT-DUAL-ZOOM)
-    // scales fixed descendants - divide the viewport coords back out so it lands under the cursor.
-    const z = zoom / 100;
-    contextMenu = { x: event.clientX / z, y: event.clientY / z };
+    contextMenu = { x: event.clientX, y: event.clientY };
   }
 
   async function saveAs(): Promise<void> {
@@ -261,7 +258,6 @@
   data-widget-id={number}
   data-any-expanded={editorExpanded || resultExpanded}
   data-drag-over={dragDepth > 0}
-  style={zoom !== 100 ? `zoom: ${zoom / 100}` : ''}
   ondragentercapture={onWidgetDragEnterCapture}
   ondragleavecapture={onWidgetDragLeaveCapture}
   ondragovercapture={onWidgetDragOverCapture}
@@ -291,6 +287,9 @@
     <button type="button" class="close-btn" onclick={close} aria-label="Close widget">&times;</button>
   </div>
 
+  <!-- FIX-WIDGET-ZOOM-HEADER: the per-widget zoom scales the editor + result only; the header
+       above stays at 100%. -->
+  <div class="widget-body" style={zoom !== 100 ? `zoom: ${zoom / 100}` : ''}>
   <div
     class="widget-editor"
     data-expanded={editorExpanded}
@@ -321,6 +320,7 @@
     {:else}
       <div class="status-line" data-status="idle">idle</div>
     {/if}
+  </div>
   </div>
 
   {#if namingTemplate}
@@ -381,6 +381,15 @@
   .widget[data-drag-over='true'] {
     outline: 2px solid var(--accent);
     outline-offset: -2px;
+  }
+
+  /* FIX-WIDGET-ZOOM-HEADER: carries the per-widget zoom; wraps the editor + result so the
+     header (a sibling above) is never scaled. Takes the column-layout role from .widget. */
+  .widget-body {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
   }
 
   .widget-header {

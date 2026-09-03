@@ -433,8 +433,13 @@ describe('Grid', () => {
   });
 
   describe('FEAT-DUAL-ZOOM: Ctrl+scroll routing', () => {
+    // The wheel event targets the widget, but the zoom lands on its .widget-body
+    // (FIX-WIDGET-ZOOM-HEADER - the header stays at 100%).
     function widgetEl(container: HTMLElement): HTMLElement {
       return container.querySelector('.widget') as HTMLElement;
+    }
+    function widgetZoomEl(container: HTMLElement): HTMLElement {
+      return container.querySelector('.widget-body') as HTMLElement;
     }
 
     it('Ctrl+wheel over a widget zooms that widget only', async () => {
@@ -444,7 +449,8 @@ describe('Grid', () => {
 
       await fireEvent.wheel(widgetEl(container), { ctrlKey: true, deltaY: -100 });
 
-      expect(widgetEl(container).style.zoom).toBe('1.1');
+      expect(widgetZoomEl(container).style.zoom).toBe('1.1');
+      expect(widgetEl(container).style.zoom).toBe('');
       expect(onNudgePageZoom).not.toHaveBeenCalled();
     });
 
@@ -456,7 +462,7 @@ describe('Grid', () => {
         await fireEvent.wheel(widgetEl(container), { ctrlKey: true, deltaY: 100 });
       }
 
-      expect(widgetEl(container).style.zoom).toBe('0.4');
+      expect(widgetZoomEl(container).style.zoom).toBe('0.4');
     });
 
     it('Ctrl+wheel outside every widget nudges the page zoom, not a widget', async () => {
@@ -467,7 +473,7 @@ describe('Grid', () => {
       await fireEvent.wheel(container, { ctrlKey: true, deltaY: -100 });
 
       expect(onNudgePageZoom).toHaveBeenCalledWith(10);
-      expect(widgetEl(container).style.zoom).toBe('');
+      expect(widgetZoomEl(container).style.zoom).toBe('');
     });
 
     it('prevents the browser default on a Ctrl+wheel but not on a plain wheel', async () => {
@@ -492,17 +498,18 @@ describe('Grid', () => {
       await flush();
       await fireEvent.click(first.getByLabelText('Add widget'));
       const cards = () => first.container.querySelectorAll('.widget');
+      const bodies = () => first.container.querySelectorAll('.widget-body');
 
       await fireEvent.wheel(cards()[0]!, { ctrlKey: true, deltaY: -100 });
       await fireEvent.wheel(cards()[1]!, { ctrlKey: true, deltaY: 100 });
 
-      expect((cards()[0] as HTMLElement).style.zoom).toBe('1.1');
-      expect((cards()[1] as HTMLElement).style.zoom).toBe('0.9');
+      expect((bodies()[0] as HTMLElement).style.zoom).toBe('1.1');
+      expect((bodies()[1] as HTMLElement).style.zoom).toBe('0.9');
 
       cleanup();
       const reloaded = render(Grid);
       await flush();
-      const zooms = [...reloaded.container.querySelectorAll('.widget')].map(
+      const zooms = [...reloaded.container.querySelectorAll('.widget-body')].map(
         (w) => (w as HTMLElement).style.zoom,
       );
       expect(zooms).toEqual(['1.1', '0.9']);
