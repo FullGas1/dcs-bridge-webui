@@ -35,3 +35,19 @@ Open questions for grilling: does per-widget zoom persist per widget or reset on
 floating control behaves in the two modes; new lower bound for the zoom-out range; interaction
 with the independent Expand-per-area already delivered in the parent lot.
 
+## App settings panel
+
+A button in the page header that opens a grid of editable parameters to reconfigure the app,
+persisted across reloads. Today every tunable is either a hardcoded constant or ambient
+localStorage state with no UI to change it. First candidate settings to expose:
+
+- **Max drag-and-dropped file size** (see the drag-and-drop entry — shipped as a hardcoded 512 KB
+  first, to be made configurable here).
+- **Zoom-out floor and zoom-in ceiling** (see the zoom-rules entry — currently hardcoded
+  80%–200%).
+
+Open questions for grilling: storage (localStorage vs backend, like templates); per-setting
+validation and what happens on a bad value; whether "reset to defaults" is offered; whether the
+panel is a modal, a drawer, or an inline section; which of the existing hardcoded constants
+(`MAX_COLLAPSED_LINES`, queue behaviour, etc.) are in scope vs. deliberately left alone.
+
