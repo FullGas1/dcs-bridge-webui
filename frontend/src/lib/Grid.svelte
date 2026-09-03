@@ -11,6 +11,10 @@
     listTemplates, saveTemplate, deleteTemplate, checkConnection, setApiKey, type Template,
   } from './api';
 
+  // FEAT-DUAL-ZOOM: App owns the page zoom; Grid calls this when a Ctrl+scroll lands outside any
+  // widget (ticket 02 wires the listener).
+  let { onNudgePageZoom }: { onNudgePageZoom?: (deltaPercent: number) => void } = $props();
+
   interface WidgetRecord {
     id: number;
     code: string;

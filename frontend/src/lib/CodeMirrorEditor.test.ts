@@ -71,16 +71,17 @@ describe('CodeMirrorEditor - ticket 02 collapsed-height reporting', () => {
   });
 });
 
-describe('CodeMirrorEditor - ticket 03 zoom must never touch document content', () => {
-  it('leaves getValue() unchanged when the page-wide zoom CSS variable changes', () => {
-    const { component } = render(CodeMirrorEditor, {
+describe('CodeMirrorEditor - zoom must never touch document content', () => {
+  it('leaves getValue() unchanged when an ancestor CSS zoom changes', () => {
+    const { component, container } = render(CodeMirrorEditor, {
       props: { initialValue: 'return 42', onChange: vi.fn() },
     });
     const editor = component as unknown as { getValue: () => string };
     const before = editor.getValue();
 
-    // Exactly what ZoomControl.svelte does - a pure CSS variable write, never a view.dispatch().
-    document.documentElement.style.setProperty('--zoom-factor', '1.5');
+    // FEAT-DUAL-ZOOM applies CSS `zoom` on the .page wrapper / the .widget - purely visual,
+    // never a view.dispatch().
+    (container.parentElement as HTMLElement).style.zoom = '1.5';
 
     expect(editor.getValue()).toBe(before);
   });

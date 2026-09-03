@@ -356,9 +356,8 @@
     border-top: 1px solid var(--border);
     padding: 6px 8px;
     font-family: var(--mono);
-    /* Ticket 03: base 13px (today's default, unchanged at 100%) scaled by the same page-wide
-       zoom factor the editor uses (ZoomControl.svelte / app.css). */
-    font-size: calc(13px * var(--zoom-factor));
+    /* FEAT-DUAL-ZOOM: plain 13px - the page and per-widget zoom are CSS `zoom` now. */
+    font-size: 13px;
     overflow: auto;
     flex: none;
   }

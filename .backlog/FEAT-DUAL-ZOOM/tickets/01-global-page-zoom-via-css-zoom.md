@@ -1,6 +1,6 @@
 # 01 — Global page zoom (banner included) via CSS `zoom`, wider range
 
-**Status:** todo
+**Status:** done
 
 ## Parent
 
@@ -28,18 +28,18 @@ with it — and widen the range to 40%–200%.
 
 ## Acceptance criteria
 
-- [ ] The page wrapper carries `style="zoom: N"` matching the control's percentage (1 at 100%,
+- [x] The page wrapper carries `style="zoom: N"` matching the control's percentage (1 at 100%,
       0.4 at 40%, 2 at 200%).
-- [ ] `ZoomControl` renders outside the zoomed wrapper in `App.svelte`.
-- [ ] `+`/`-` on the control change the page zoom by 10% and update the `%` text; the buttons
+- [x] `ZoomControl` renders outside the zoomed wrapper in `App.svelte`.
+- [x] `+`/`-` on the control change the page zoom by 10% and update the `%` text; the buttons
       disable at 40% and 200%.
-- [ ] The global zoom still persists: reload restores the last value (existing
+- [x] The global zoom still persists: reload restores the last value (existing
       `dcs-bridge-webui:zoom` key), clamped to 40–200.
-- [ ] `--zoom-factor` no longer appears in the codebase; the editor and result use a plain
+- [x] `--zoom-factor` no longer appears in the codebase; the editor and result use a plain
       `font-size`.
-- [ ] `zoomStore.test.ts` covers the lowered `MIN_ZOOM` (40) — save/load/clamp at the new floor.
-- [ ] `ZoomControl.test.ts` covers the controlled `+`/`-`/`%`/clamp/disable behaviour (no wheel).
-- [ ] `App.test.ts` covers: the wrapper's `style="zoom"` reflects the persisted level, and
+- [x] `zoomStore.test.ts` covers the lowered `MIN_ZOOM` (40) — save/load/clamp at the new floor.
+- [x] `ZoomControl.test.ts` covers the controlled `+`/`-`/`%`/clamp/disable behaviour (no wheel).
+- [x] `App.test.ts` covers: the wrapper's `style="zoom"` reflects the persisted level, and
       `ZoomControl` is not inside `.page`.
 
 ## Blocked by
