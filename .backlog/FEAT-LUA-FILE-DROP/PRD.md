@@ -11,7 +11,7 @@
 | `01-drop-lua-onto-widget` | done | 01 — Drop a `.lua` file onto a widget (core path) |
 | `02-remember-and-display-file-name` | done | 02 — Remember and display the dropped file's name |
 | `03-transient-message-and-dragover-highlight` | done | 03 — Aggregated transient message and `dragover` highlight |
-| `04-drop-onto-add-button-and-multi-file` | todo | 04 — Drop onto the `+` button, and multi-file drops |
+| `04-drop-onto-add-button-and-multi-file` | done | 04 — Drop onto the `+` button, and multi-file drops |
 | `05-manual-cross-browser-verification` | todo | 05 — Manual cross-browser drag-and-drop verification (HITL) |
 
 ## Problem Statement

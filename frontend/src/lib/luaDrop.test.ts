@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
-  dragHasFiles, formatDropMessage, MAX_LUA_FILE_BYTES, readDroppedLuaFile,
-  type DroppedLuaFile,
+  dragHasFiles, formatDropMessage, MAX_LUA_FILE_BYTES, partitionDroppedFiles, readDroppedLuaFile,
+  type DropPartition,
 } from './luaDrop';
 
 function luaFile(name: string, contents: string): File {
@@ -70,48 +70,130 @@ describe('readDroppedLuaFile', () => {
   });
 });
 
+describe('partitionDroppedFiles', () => {
+  it('keeps every accepted .lua for an add-button drop, in file order', async () => {
+    const part = await partitionDroppedFiles(
+      [luaFile('a.lua', 'A'), luaFile('b.lua', 'B'), luaFile('c.lua', 'C')],
+      'add-button',
+    );
+
+    expect(part.loaded).toEqual([
+      { name: 'a.lua', text: 'A' },
+      { name: 'b.lua', text: 'B' },
+      { name: 'c.lua', text: 'C' },
+    ]);
+    expect(part.rejected).toEqual([]);
+  });
+
+  it('keeps only the first accepted .lua for a widget drop, rest ignored', async () => {
+    const part = await partitionDroppedFiles(
+      [luaFile('first.lua', '1'), luaFile('second.lua', '2'), luaFile('third.lua', '3')],
+      'widget',
+    );
+
+    expect(part.loaded).toEqual([{ name: 'first.lua', text: '1' }]);
+    expect(part.rejected).toEqual([
+      { name: 'second.lua', reason: 'extra-for-widget' },
+      { name: 'third.lua', reason: 'extra-for-widget' },
+    ]);
+  });
+
+  it('for a widget drop, the "first" is the first accepted one, skipping leading non-.lua', async () => {
+    const part = await partitionDroppedFiles(
+      [luaFile('note.txt', 'x'), luaFile('good.lua', 'G'), luaFile('extra.lua', 'E')],
+      'widget',
+    );
+
+    expect(part.loaded).toEqual([{ name: 'good.lua', text: 'G' }]);
+    expect(part.rejected).toEqual([
+      { name: 'note.txt', reason: 'not-lua' },
+      { name: 'extra.lua', reason: 'extra-for-widget' },
+    ]);
+  });
+
+  it('separates non-.lua and oversized files for an add-button drop', async () => {
+    const part = await partitionDroppedFiles(
+      [
+        luaFile('ok.lua', 'OK'),
+        luaFile('notes.txt', 'x'),
+        luaFile('big.lua', 'x'.repeat(MAX_LUA_FILE_BYTES + 1)),
+      ],
+      'add-button',
+    );
+
+    expect(part.loaded).toEqual([{ name: 'ok.lua', text: 'OK' }]);
+    expect(part.rejected).toEqual([
+      { name: 'notes.txt', reason: 'not-lua' },
+      { name: 'big.lua', reason: 'too-large' },
+    ]);
+  });
+
+  it('strips a BOM from each loaded file', async () => {
+    const part = await partitionDroppedFiles([luaFile('b.lua', '﻿return 1')], 'add-button');
+
+    expect(part.loaded[0]!.text).toBe('return 1');
+  });
+
+  it('returns an empty partition for no files', async () => {
+    expect(await partitionDroppedFiles([], 'add-button')).toEqual({ loaded: [], rejected: [] });
+  });
+});
+
 describe('formatDropMessage', () => {
-  const ok = (name: string): DroppedLuaFile => ({ ok: true, name, text: '' });
-  const bad = (name: string, reason: 'not-lua' | 'too-large'): DroppedLuaFile => ({
-    ok: false, name, reason,
+  const part = (loaded: string[], rejected: DropPartition['rejected'] = []): DropPartition => ({
+    loaded: loaded.map((name) => ({ name, text: '' })),
+    rejected,
   });
 
   it('is null for an empty drop', () => {
-    expect(formatDropMessage([])).toBeNull();
+    expect(formatDropMessage(part([]))).toBeNull();
   });
 
   it('is null for a single loaded file (the editor change speaks for itself)', () => {
-    expect(formatDropMessage([ok('a.lua')])).toBeNull();
+    expect(formatDropMessage(part(['a.lua']))).toBeNull();
   });
 
   it('reports a count once more than one file is loaded', () => {
-    expect(formatDropMessage([ok('a.lua'), ok('b.lua')])).toBe('2 files loaded');
+    expect(formatDropMessage(part(['a.lua', 'b.lua']))).toBe('2 files loaded');
   });
 
   it('reports a single ignored non-.lua file', () => {
-    expect(formatDropMessage([bad('notes.txt', 'not-lua')])).toBe('1 ignored (not a .lua file)');
+    expect(formatDropMessage(part([], [{ name: 'notes.txt', reason: 'not-lua' }]))).toBe(
+      '1 ignored (not a .lua file)',
+    );
   });
 
   it('reports a single ignored oversized file', () => {
-    expect(formatDropMessage([bad('big.lua', 'too-large')])).toBe('1 ignored (over 512 KB)');
+    expect(formatDropMessage(part([], [{ name: 'big.lua', reason: 'too-large' }]))).toBe(
+      '1 ignored (over 512 KB)',
+    );
+  });
+
+  it('reports files ignored because a widget takes only one', () => {
+    expect(
+      formatDropMessage(part(['a.lua'], [
+        { name: 'b.lua', reason: 'extra-for-widget' },
+        { name: 'c.lua', reason: 'extra-for-widget' },
+      ])),
+    ).toBe('1 file loaded · 2 ignored (only one file per widget)');
   });
 
   it('aggregates loaded and ignored counts into one line', () => {
     expect(
-      formatDropMessage([ok('a.lua'), ok('b.lua'), bad('c.txt', 'not-lua'), bad('d.lua', 'too-large')]),
+      formatDropMessage(part(['a.lua', 'b.lua'], [
+        { name: 'c.txt', reason: 'not-lua' },
+        { name: 'd.lua', reason: 'too-large' },
+      ])),
     ).toBe('2 files loaded · 1 ignored (not a .lua file) · 1 ignored (over 512 KB)');
   });
 
   it('groups multiple files ignored for the same reason', () => {
-    expect(formatDropMessage([bad('a.txt', 'not-lua'), bad('b.md', 'not-lua')])).toBe(
-      '2 ignored (not a .lua file)',
-    );
-  });
-
-  it('uses the singular "file loaded" for exactly one load alongside a rejection', () => {
-    expect(formatDropMessage([ok('a.lua'), bad('b.txt', 'not-lua')])).toBe(
-      '1 file loaded · 1 ignored (not a .lua file)',
-    );
+    expect(
+      formatDropMessage(part([], [
+        { name: 'a.txt', reason: 'not-lua' },
+        { name: 'b.md', reason: 'not-lua' },
+      ])),
+    ).toBe('2 ignored (not a .lua file)');
   });
 });
 

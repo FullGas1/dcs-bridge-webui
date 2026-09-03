@@ -561,9 +561,10 @@ describe('Widget', () => {
       );
       await flush();
 
-      expect(onDropReport).toHaveBeenCalledWith([
-        expect.objectContaining({ ok: true, name: 'x.lua' }),
-      ]);
+      expect(onDropReport).toHaveBeenCalledWith({
+        loaded: [{ name: 'x.lua', text: 'return 1' }],
+        rejected: [],
+      });
     });
 
     it('reports the drop outcome for a rejected file', async () => {
@@ -576,9 +577,51 @@ describe('Widget', () => {
       );
       await flush();
 
-      expect(onDropReport).toHaveBeenCalledWith([
-        { ok: false, name: 'notes.txt', reason: 'not-lua' },
-      ]);
+      expect(onDropReport).toHaveBeenCalledWith({
+        loaded: [],
+        rejected: [{ name: 'notes.txt', reason: 'not-lua' }],
+      });
+    });
+  });
+
+  describe('ticket 04: multiple files dropped on one widget', () => {
+    function luaFile(name: string, contents: string): File {
+      return new File([contents], name, { type: '' });
+    }
+    function fileDrop(files: File[]) {
+      return { dataTransfer: { files, types: ['Files'] } };
+    }
+
+    it('loads only the first .lua and names the widget after it', async () => {
+      const { container, getByText } = render(Widget, { props: baseProps({ number: 1 }) });
+
+      await fireEvent.drop(
+        container.querySelector('.widget')!,
+        fileDrop([luaFile('first.lua', 'return first()'), luaFile('second.lua', 'return second()')]),
+      );
+      await flush();
+
+      expect(container.querySelector('.cm-content')?.textContent).toBe('return first()');
+      expect(getByText('Widget 1 — first.lua')).toBeInTheDocument();
+    });
+
+    it('reports the extra files as ignored', async () => {
+      const onDropReport = vi.fn();
+      const { container } = render(Widget, { props: baseProps({ onDropReport }) });
+
+      await fireEvent.drop(
+        container.querySelector('.widget')!,
+        fileDrop([luaFile('a.lua', 'A'), luaFile('b.lua', 'B'), luaFile('c.lua', 'C')]),
+      );
+      await flush();
+
+      expect(onDropReport).toHaveBeenCalledWith({
+        loaded: [{ name: 'a.lua', text: 'A' }],
+        rejected: [
+          { name: 'b.lua', reason: 'extra-for-widget' },
+          { name: 'c.lua', reason: 'extra-for-widget' },
+        ],
+      });
     });
   });
 });

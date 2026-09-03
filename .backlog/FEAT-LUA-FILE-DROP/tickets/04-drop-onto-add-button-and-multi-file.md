@@ -1,6 +1,6 @@
 # 04 — Drop onto the `+` button, and multi-file drops
 
-**Status:** todo
+**Status:** done
 
 ## Parent
 
@@ -26,18 +26,18 @@ predictably on both target kinds.
 
 ## Acceptance criteria
 
-- [ ] Dropping N `.lua` files on `+` creates N new widgets in file order, each pre-filled with
+- [x] Dropping N `.lua` files on `+` creates N new widgets in file order, each pre-filled with
       the right file's contents and showing the right base name.
-- [ ] Dropping a mix of `.lua` and non-`.lua` (or oversized) files on `+` creates only the
+- [x] Dropping a mix of `.lua` and non-`.lua` (or oversized) files on `+` creates only the
       accepted count and shows one aggregated message covering the skipped ones.
-- [ ] Dropping a batch with no accepted `.lua` on `+` creates no widget and shows the message.
-- [ ] A `+` drop does not move focus and does not scroll the page.
-- [ ] Dropping multiple files on a single widget loads only the first accepted `.lua` and shows a
+- [x] Dropping a batch with no accepted `.lua` on `+` creates no widget and shows the message.
+- [x] A `+` drop does not move focus and does not scroll the page.
+- [x] Dropping multiple files on a single widget loads only the first accepted `.lua` and shows a
       message that the rest were ignored.
-- [ ] The `+` button highlights while a file is dragged over it and not while text is dragged.
-- [ ] `luaDrop.ts` unit coverage for the multi-file partition: order preserved, mixed
+- [x] The `+` button highlights while a file is dragged over it and not while text is dragged.
+- [x] `luaDrop.ts` unit coverage for the multi-file partition: order preserved, mixed
       accept/reject, `add-button` keeps all accepted while `widget` keeps only the first.
-- [ ] `Grid.svelte` component coverage for N-widgets-from-`+` and the mixed-batch message (prior
+- [x] `Grid.svelte` component coverage for N-widgets-from-`+` and the mixed-batch message (prior
       art: `Grid.test.ts`).
 
 ## Blocked by

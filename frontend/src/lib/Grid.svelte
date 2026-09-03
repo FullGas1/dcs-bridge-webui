@@ -4,7 +4,9 @@
   import ConnectionBanner from './ConnectionBanner.svelte';
   import { InjectionQueue } from './injectionQueue';
   import { loadWidgets, saveWidgets } from './widgetSession';
-  import { dragHasFiles, formatDropMessage, type DroppedLuaFile } from './luaDrop';
+  import {
+    dragHasFiles, formatDropMessage, partitionDroppedFiles, type DropPartition,
+  } from './luaDrop';
   import {
     listTemplates, saveTemplate, deleteTemplate, checkConnection, setApiKey, type Template,
   } from './api';
@@ -106,6 +108,47 @@
     });
   }
 
+  // Ticket 04 (FEAT-LUA-FILE-DROP): `.lua` files dropped on the add button - one new widget per
+  // accepted file, in file order, pre-filled and named. Focus and scroll are left alone (several
+  // widgets may appear at once). `dragDepth` mirrors the per-widget highlight logic.
+  let addDragDepth = $state(0);
+
+  function onAddDragEnter(event: DragEvent): void {
+    if (!dragHasFiles(event)) return;
+    event.preventDefault();
+    addDragDepth += 1;
+  }
+
+  function onAddDragLeave(event: DragEvent): void {
+    if (!dragHasFiles(event)) return;
+    addDragDepth = Math.max(0, addDragDepth - 1);
+  }
+
+  function onAddDragOver(event: DragEvent): void {
+    if (!dragHasFiles(event)) return;
+    event.preventDefault();
+  }
+
+  function onAddDrop(event: DragEvent): void {
+    if (!dragHasFiles(event)) return;
+    event.preventDefault();
+    event.stopPropagation();
+    addDragDepth = 0;
+    const files = event.dataTransfer?.files;
+    if (files && files.length > 0) void addWidgetsFromFiles(Array.from(files));
+  }
+
+  async function addWidgetsFromFiles(files: File[]): Promise<void> {
+    const partition = await partitionDroppedFiles(files, 'add-button');
+    reportDrop(partition);
+    for (const file of partition.loaded) {
+      widgets.push({
+        id: nextId++, code: file.text, filename: file.name,
+        editorExpanded: false, resultExpanded: false,
+      });
+    }
+  }
+
   function closeWidget(id: number): void {
     widgets = widgets.filter((w) => w.id !== id);
   }
@@ -136,8 +179,8 @@
   let dropMessage = $state<string | null>(null);
   let dropMessageTimer: ReturnType<typeof setTimeout> | undefined;
 
-  function reportDrop(results: DroppedLuaFile[]): void {
-    const message = formatDropMessage(results);
+  function reportDrop(partition: DropPartition): void {
+    const message = formatDropMessage(partition);
     clearTimeout(dropMessageTimer);
     dropMessage = message;
     if (message !== null) {
@@ -184,7 +227,17 @@
       onDeleteTemplate={handleDeleteTemplate}
     />
   {/each}
-  <button type="button" class="add-widget" onclick={addWidget} aria-label="Add widget">+</button>
+  <button
+    type="button"
+    class="add-widget"
+    data-drag-over={addDragDepth > 0}
+    onclick={addWidget}
+    ondragenter={onAddDragEnter}
+    ondragleave={onAddDragLeave}
+    ondragover={onAddDragOver}
+    ondrop={onAddDrop}
+    aria-label="Add widget"
+  >+</button>
 </div>
 
 <style>
@@ -206,5 +259,12 @@
   .drop-message button {
     line-height: 1;
     padding: 2px 8px;
+  }
+
+  /* Ticket 04: a file is being dragged over the add button - dropping here makes new widgets. */
+  .add-widget[data-drag-over='true'] {
+    outline: 2px solid var(--accent);
+    outline-offset: -2px;
+    border-style: solid;
   }
 </style>

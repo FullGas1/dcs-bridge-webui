@@ -4,7 +4,7 @@
   import ExpandToggle from './ExpandToggle.svelte';
   import TemplateDropdown from './TemplateDropdown.svelte';
   import { MAX_COLLAPSED_LINES } from './layoutConstants';
-  import { dragHasFiles, readDroppedLuaFile, type DroppedLuaFile } from './luaDrop';
+  import { dragHasFiles, partitionDroppedFiles, type DropPartition } from './luaDrop';
   import type { Template } from './api';
   import type { InjectionQueue, Activity, LastRun, JobHandle } from './injectionQueue';
 
@@ -21,9 +21,9 @@
     // Ticket 02 (FEAT-LUA-FILE-DROP): the widget's remembered source name, seeded from storage.
     initialFilename?: string | null;
     onFilenameChange?: (filename: string | null) => void;
-    // Ticket 03 (FEAT-LUA-FILE-DROP): reports every dropped file's outcome so the grid can show
-    // one aggregated transient message.
-    onDropReport?: (results: DroppedLuaFile[]) => void;
+    // Ticket 03 (FEAT-LUA-FILE-DROP): reports the drop's outcome so the grid can show one
+    // aggregated transient message.
+    onDropReport?: (partition: DropPartition) => void;
     templates: Template[];
     onSaveTemplate: (name: string, code: string) => void;
     onDeleteTemplate: (id: string) => void;
@@ -151,18 +151,21 @@
     event.preventDefault();
     event.stopPropagation();
     dragDepth = 0;
-    const file = event.dataTransfer?.files?.[0];
-    if (file) void loadDroppedFile(file);
+    const files = event.dataTransfer?.files;
+    if (files && files.length > 0) void loadDroppedFiles(Array.from(files));
   }
 
-  async function loadDroppedFile(file: File): Promise<void> {
-    const result = await readDroppedLuaFile(file);
-    onDropReport?.([result]);
-    if (!result.ok) return;
-    editor.setValue(result.text);
-    code = result.text;
-    onCodeChange?.(result.text);
-    setFilename(result.name);
+  // Ticket 04: a widget holds one script - only the first accepted `.lua` is loaded, the rest are
+  // reported as ignored by the aggregated message.
+  async function loadDroppedFiles(files: File[]): Promise<void> {
+    const partition = await partitionDroppedFiles(files, 'widget');
+    onDropReport?.(partition);
+    const first = partition.loaded[0];
+    if (!first) return;
+    editor.setValue(first.text);
+    code = first.text;
+    onCodeChange?.(first.text);
+    setFilename(first.name);
     editor.focus();
   }
 
