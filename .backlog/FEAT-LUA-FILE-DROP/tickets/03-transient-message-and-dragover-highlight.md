@@ -1,6 +1,6 @@
 # 03 — Aggregated transient message and `dragover` highlight
 
-**Status:** todo
+**Status:** done
 
 ## Parent
 
@@ -28,18 +28,18 @@ it, and one short self-dismissing message per drop reports anything that was ski
 
 ## Acceptance criteria
 
-- [ ] Dragging a file over a widget adds a visible highlight to that widget; leaving or dropping
+- [x] Dragging a file over a widget adds a visible highlight to that widget; leaving or dropping
       removes it.
-- [ ] Dragging a text selection (not a file) over a widget adds no highlight.
-- [ ] Dropping a non-`.lua` file shows a transient message naming it as ignored (not `.lua`) and
+- [x] Dragging a text selection (not a file) over a widget adds no highlight.
+- [x] Dropping a non-`.lua` file shows a transient message naming it as ignored (not `.lua`) and
       changes no widget.
-- [ ] Dropping an over-512 KB `.lua` shows a transient message naming it as ignored (too large).
-- [ ] The message clears itself after roughly 5 seconds and can be dismissed immediately with its
+- [x] Dropping an over-512 KB `.lua` shows a transient message naming it as ignored (too large).
+- [x] The message clears itself after roughly 5 seconds and can be dismissed immediately with its
       `×`.
-- [ ] A second drop replaces the first drop's message rather than stacking.
-- [ ] `luaDrop.ts` message-formatter unit coverage for each mix of loaded / not-`.lua` /
+- [x] A second drop replaces the first drop's message rather than stacking.
+- [x] `luaDrop.ts` message-formatter unit coverage for each mix of loaded / not-`.lua` /
       too-large counts.
-- [ ] `Grid.svelte` component coverage for the message appearing, auto-clearing, and
+- [x] `Grid.svelte` component coverage for the message appearing, auto-clearing, and
       `×`-dismissing (prior art: `Grid.test.ts`).
 
 ## Blocked by

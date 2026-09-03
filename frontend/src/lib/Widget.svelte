@@ -4,7 +4,7 @@
   import ExpandToggle from './ExpandToggle.svelte';
   import TemplateDropdown from './TemplateDropdown.svelte';
   import { MAX_COLLAPSED_LINES } from './layoutConstants';
-  import { dragHasFiles, readDroppedLuaFile } from './luaDrop';
+  import { dragHasFiles, readDroppedLuaFile, type DroppedLuaFile } from './luaDrop';
   import type { Template } from './api';
   import type { InjectionQueue, Activity, LastRun, JobHandle } from './injectionQueue';
 
@@ -21,6 +21,9 @@
     // Ticket 02 (FEAT-LUA-FILE-DROP): the widget's remembered source name, seeded from storage.
     initialFilename?: string | null;
     onFilenameChange?: (filename: string | null) => void;
+    // Ticket 03 (FEAT-LUA-FILE-DROP): reports every dropped file's outcome so the grid can show
+    // one aggregated transient message.
+    onDropReport?: (results: DroppedLuaFile[]) => void;
     templates: Template[];
     onSaveTemplate: (name: string, code: string) => void;
     onDeleteTemplate: (id: string) => void;
@@ -28,7 +31,7 @@
   let {
     number, queue, editorExpanded, resultExpanded, onClose, onToggleEditorExpand,
     onToggleResultExpand, initialCode = '', onCodeChange, initialFilename = null,
-    onFilenameChange, templates, onSaveTemplate, onDeleteTemplate,
+    onFilenameChange, onDropReport, templates, onSaveTemplate, onDeleteTemplate,
   }: Props = $props();
 
   // Seeded once from the prop, then independently editable - not a live mirror of it.
@@ -120,6 +123,23 @@
   // contents. Handled in the capture phase on the widget root so it wins over CodeMirror's own
   // native file-drop (which would insert at the cursor) - see the ADR. `stopPropagation` also
   // keeps the event from reaching the grid-level guard, which only cares about missed drops.
+  // Ticket 03: `dragDepth` tracks enter/leave across nested children so the highlight doesn't
+  // flicker as the pointer moves between the header, the editor, and the result.
+  let dragDepth = $state(0);
+
+  function onWidgetDragEnterCapture(event: DragEvent): void {
+    if (!dragHasFiles(event)) return;
+    event.preventDefault();
+    event.stopPropagation();
+    dragDepth += 1;
+  }
+
+  function onWidgetDragLeaveCapture(event: DragEvent): void {
+    if (!dragHasFiles(event)) return;
+    event.stopPropagation();
+    dragDepth = Math.max(0, dragDepth - 1);
+  }
+
   function onWidgetDragOverCapture(event: DragEvent): void {
     if (!dragHasFiles(event)) return;
     event.preventDefault();
@@ -130,13 +150,15 @@
     if (!dragHasFiles(event)) return;
     event.preventDefault();
     event.stopPropagation();
+    dragDepth = 0;
     const file = event.dataTransfer?.files?.[0];
     if (file) void loadDroppedFile(file);
   }
 
   async function loadDroppedFile(file: File): Promise<void> {
     const result = await readDroppedLuaFile(file);
-    if (!result.ok) return; // ticket 03 surfaces the rejection as a transient message
+    onDropReport?.([result]);
+    if (!result.ok) return;
     editor.setValue(result.text);
     code = result.text;
     onCodeChange?.(result.text);
@@ -169,6 +191,9 @@
 <div
   class="widget"
   data-any-expanded={editorExpanded || resultExpanded}
+  data-drag-over={dragDepth > 0}
+  ondragentercapture={onWidgetDragEnterCapture}
+  ondragleavecapture={onWidgetDragLeaveCapture}
   ondragovercapture={onWidgetDragOverCapture}
   ondropcapture={onWidgetDropCapture}
 >
@@ -263,6 +288,12 @@
        is just the natural sum of the editor's and the result's own heights, each independently
        capped/dynamic (see .widget-editor / .widget-result below) or unbounded while expanded
        (ticket 01) - nothing left for this container itself to constrain. */
+  }
+
+  /* Ticket 03 (FEAT-LUA-FILE-DROP): a file is being dragged over this widget - it will land here. */
+  .widget[data-drag-over='true'] {
+    outline: 2px solid var(--accent);
+    outline-offset: -2px;
   }
 
   .widget-header {

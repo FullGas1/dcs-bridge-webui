@@ -315,6 +315,106 @@ describe('Grid', () => {
     });
   });
 
+  describe('ticket 03: transient drop message', () => {
+    function luaFile(name: string, contents: string): File {
+      return new File([contents], name, { type: '' });
+    }
+    function fileDrop(files: File[]) {
+      return { dataTransfer: { files, types: ['Files'] } };
+    }
+
+    it('shows a message when a dropped file is ignored', async () => {
+      const { container, getByText } = render(Grid);
+      await flush();
+
+      await fireEvent.drop(
+        container.querySelector('.widget')!,
+        fileDrop([luaFile('notes.txt', 'return 1')]),
+      );
+      await flush();
+
+      expect(getByText('1 ignored (not a .lua file)')).toBeInTheDocument();
+    });
+
+    it('shows a message when a dropped .lua is over the size cap', async () => {
+      const { container, getByText } = render(Grid);
+      await flush();
+
+      await fireEvent.drop(
+        container.querySelector('.widget')!,
+        fileDrop([luaFile('big.lua', 'x'.repeat(512 * 1024 + 1))]),
+      );
+      await flush();
+
+      expect(getByText('1 ignored (over 512 KB)')).toBeInTheDocument();
+    });
+
+    it('replaces a still-showing message with the next drop rather than stacking', async () => {
+      const { container, getByText, queryByText } = render(Grid);
+      await flush();
+      const widget = () => container.querySelector('.widget')!;
+
+      await fireEvent.drop(widget(), fileDrop([luaFile('a.txt', '1')]));
+      await flush();
+      await fireEvent.drop(widget(), fileDrop([luaFile('b.md', '1')]));
+      await flush();
+
+      expect(queryByText(/not a \.lua file/)).toBeInTheDocument();
+      expect(container.querySelectorAll('.drop-message')).toHaveLength(1);
+      getByText('1 ignored (not a .lua file)');
+    });
+
+    it('shows no message for a clean single-file drop', async () => {
+      const { container, queryByText } = render(Grid);
+      await flush();
+
+      await fireEvent.drop(
+        container.querySelector('.widget')!,
+        fileDrop([luaFile('ok.lua', 'return 1')]),
+      );
+      await flush();
+
+      expect(queryByText(/loaded|ignored/)).toBeNull();
+    });
+
+    it('dismisses the message when its close button is clicked', async () => {
+      const { container, getByText, queryByText, getByLabelText } = render(Grid);
+      await flush();
+
+      await fireEvent.drop(
+        container.querySelector('.widget')!,
+        fileDrop([luaFile('notes.txt', 'return 1')]),
+      );
+      await flush();
+      expect(getByText('1 ignored (not a .lua file)')).toBeInTheDocument();
+
+      await fireEvent.click(getByLabelText('Dismiss message'));
+
+      expect(queryByText('1 ignored (not a .lua file)')).toBeNull();
+    });
+
+    it('auto-dismisses the message after five seconds', async () => {
+      vi.useFakeTimers();
+      try {
+        const { container, queryByText } = render(Grid);
+        await vi.advanceTimersByTimeAsync(0);
+
+        await fireEvent.drop(
+          container.querySelector('.widget')!,
+          fileDrop([luaFile('notes.txt', 'return 1')]),
+        );
+        await vi.advanceTimersByTimeAsync(0);
+        expect(queryByText('1 ignored (not a .lua file)')).toBeInTheDocument();
+
+        await vi.advanceTimersByTimeAsync(5000);
+
+        expect(queryByText('1 ignored (not a .lua file)')).toBeNull();
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+  });
+
   describe('ticket 02: remembered file name through the grid', () => {
     function luaFile(name: string, contents: string): File {
       return new File([contents], name, { type: '' });

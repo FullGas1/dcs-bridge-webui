@@ -500,4 +500,85 @@ describe('Widget', () => {
       expect(getByText('Widget 7 — restored.lua')).toBeInTheDocument();
     });
   });
+
+  describe('ticket 03: drag-over highlight and drop report', () => {
+    function luaFile(name: string, contents: string): File {
+      return new File([contents], name, { type: '' });
+    }
+    function fileDrag() {
+      return { dataTransfer: { types: ['Files'] } };
+    }
+    function fileDrop(files: File[]) {
+      return { dataTransfer: { files, types: ['Files'] } };
+    }
+
+    it('marks the widget as a drop target while a file is dragged over it', async () => {
+      const { container } = render(Widget, { props: baseProps() });
+      const widget = container.querySelector('.widget')!;
+
+      await fireEvent.dragEnter(widget, fileDrag());
+
+      expect(widget.getAttribute('data-drag-over')).toBe('true');
+    });
+
+    it('clears the drop-target mark when the drag leaves', async () => {
+      const { container } = render(Widget, { props: baseProps() });
+      const widget = container.querySelector('.widget')!;
+
+      await fireEvent.dragEnter(widget, fileDrag());
+      await fireEvent.dragLeave(widget, fileDrag());
+
+      expect(widget.getAttribute('data-drag-over')).toBe('false');
+    });
+
+    it('clears the drop-target mark after a drop', async () => {
+      const { container } = render(Widget, { props: baseProps() });
+      const widget = container.querySelector('.widget')!;
+
+      await fireEvent.dragEnter(widget, fileDrag());
+      await fireEvent.drop(widget, fileDrop([luaFile('x.lua', 'return 1')]));
+      await flush();
+
+      expect(widget.getAttribute('data-drag-over')).toBe('false');
+    });
+
+    it('does not mark a drop target for a non-file drag', async () => {
+      const { container } = render(Widget, { props: baseProps() });
+      const widget = container.querySelector('.widget')!;
+
+      await fireEvent.dragEnter(widget, { dataTransfer: { types: ['text/plain'] } });
+
+      expect(widget.getAttribute('data-drag-over')).toBe('false');
+    });
+
+    it('reports the drop outcome for an accepted file', async () => {
+      const onDropReport = vi.fn();
+      const { container } = render(Widget, { props: baseProps({ onDropReport }) });
+
+      await fireEvent.drop(
+        container.querySelector('.widget')!,
+        fileDrop([luaFile('x.lua', 'return 1')]),
+      );
+      await flush();
+
+      expect(onDropReport).toHaveBeenCalledWith([
+        expect.objectContaining({ ok: true, name: 'x.lua' }),
+      ]);
+    });
+
+    it('reports the drop outcome for a rejected file', async () => {
+      const onDropReport = vi.fn();
+      const { container } = render(Widget, { props: baseProps({ onDropReport }) });
+
+      await fireEvent.drop(
+        container.querySelector('.widget')!,
+        fileDrop([luaFile('notes.txt', 'return 1')]),
+      );
+      await flush();
+
+      expect(onDropReport).toHaveBeenCalledWith([
+        { ok: false, name: 'notes.txt', reason: 'not-lua' },
+      ]);
+    });
+  });
 });

@@ -4,7 +4,7 @@
   import ConnectionBanner from './ConnectionBanner.svelte';
   import { InjectionQueue } from './injectionQueue';
   import { loadWidgets, saveWidgets } from './widgetSession';
-  import { dragHasFiles } from './luaDrop';
+  import { dragHasFiles, formatDropMessage, type DroppedLuaFile } from './luaDrop';
   import {
     listTemplates, saveTemplate, deleteTemplate, checkConnection, setApiKey, type Template,
   } from './api';
@@ -129,10 +129,39 @@
     const widget = widgets.find((w) => w.id === id);
     if (widget) widget.filename = filename;
   }
+
+  // Ticket 03 (FEAT-LUA-FILE-DROP): one aggregated, self-dismissing line about the last drop.
+  // A new drop replaces any message still on screen.
+  const DROP_MESSAGE_MS = 5000;
+  let dropMessage = $state<string | null>(null);
+  let dropMessageTimer: ReturnType<typeof setTimeout> | undefined;
+
+  function reportDrop(results: DroppedLuaFile[]): void {
+    const message = formatDropMessage(results);
+    clearTimeout(dropMessageTimer);
+    dropMessage = message;
+    if (message !== null) {
+      dropMessageTimer = setTimeout(() => (dropMessage = null), DROP_MESSAGE_MS);
+    }
+  }
+
+  function dismissDropMessage(): void {
+    clearTimeout(dropMessageTimer);
+    dropMessage = null;
+  }
+
+  onMount(() => () => clearTimeout(dropMessageTimer));
 </script>
 
 {#if !connected}
   <ConnectionBanner onSubmit={handleConnectionSubmit} />
+{/if}
+
+{#if dropMessage}
+  <div class="drop-message" role="status">
+    <span>{dropMessage}</span>
+    <button type="button" onclick={dismissDropMessage} aria-label="Dismiss message">&times;</button>
+  </div>
 {/if}
 
 <div class="grid">
@@ -149,6 +178,7 @@
       onToggleResultExpand={() => toggleResultExpand(w.id)}
       onCodeChange={(code) => updateCode(w.id, code)}
       onFilenameChange={(filename) => updateFilename(w.id, filename)}
+      onDropReport={reportDrop}
       {templates}
       onSaveTemplate={handleSaveTemplate}
       onDeleteTemplate={handleDeleteTemplate}
@@ -156,3 +186,25 @@
   {/each}
   <button type="button" class="add-widget" onclick={addWidget} aria-label="Add widget">+</button>
 </div>
+
+<style>
+  /* Ticket 03 (FEAT-LUA-FILE-DROP): full-width bar under the branding header, above the grid. */
+  .drop-message {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 16px;
+    background: var(--bg-surface);
+    border-bottom: 1px solid var(--border);
+    font-size: 13px;
+  }
+
+  .drop-message span {
+    flex: 1;
+  }
+
+  .drop-message button {
+    line-height: 1;
+    padding: 2px 8px;
+  }
+</style>

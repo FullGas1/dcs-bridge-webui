@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { dragHasFiles, MAX_LUA_FILE_BYTES, readDroppedLuaFile } from './luaDrop';
+import {
+  dragHasFiles, formatDropMessage, MAX_LUA_FILE_BYTES, readDroppedLuaFile,
+  type DroppedLuaFile,
+} from './luaDrop';
 
 function luaFile(name: string, contents: string): File {
   return new File([contents], name, { type: '' });
@@ -64,6 +67,51 @@ describe('readDroppedLuaFile', () => {
 
   it('caps at 512 KB', () => {
     expect(MAX_LUA_FILE_BYTES).toBe(512 * 1024);
+  });
+});
+
+describe('formatDropMessage', () => {
+  const ok = (name: string): DroppedLuaFile => ({ ok: true, name, text: '' });
+  const bad = (name: string, reason: 'not-lua' | 'too-large'): DroppedLuaFile => ({
+    ok: false, name, reason,
+  });
+
+  it('is null for an empty drop', () => {
+    expect(formatDropMessage([])).toBeNull();
+  });
+
+  it('is null for a single loaded file (the editor change speaks for itself)', () => {
+    expect(formatDropMessage([ok('a.lua')])).toBeNull();
+  });
+
+  it('reports a count once more than one file is loaded', () => {
+    expect(formatDropMessage([ok('a.lua'), ok('b.lua')])).toBe('2 files loaded');
+  });
+
+  it('reports a single ignored non-.lua file', () => {
+    expect(formatDropMessage([bad('notes.txt', 'not-lua')])).toBe('1 ignored (not a .lua file)');
+  });
+
+  it('reports a single ignored oversized file', () => {
+    expect(formatDropMessage([bad('big.lua', 'too-large')])).toBe('1 ignored (over 512 KB)');
+  });
+
+  it('aggregates loaded and ignored counts into one line', () => {
+    expect(
+      formatDropMessage([ok('a.lua'), ok('b.lua'), bad('c.txt', 'not-lua'), bad('d.lua', 'too-large')]),
+    ).toBe('2 files loaded · 1 ignored (not a .lua file) · 1 ignored (over 512 KB)');
+  });
+
+  it('groups multiple files ignored for the same reason', () => {
+    expect(formatDropMessage([bad('a.txt', 'not-lua'), bad('b.md', 'not-lua')])).toBe(
+      '2 ignored (not a .lua file)',
+    );
+  });
+
+  it('uses the singular "file loaded" for exactly one load alongside a rejection', () => {
+    expect(formatDropMessage([ok('a.lua'), bad('b.txt', 'not-lua')])).toBe(
+      '1 file loaded · 1 ignored (not a .lua file)',
+    );
   });
 });
 

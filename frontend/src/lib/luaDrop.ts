@@ -36,3 +36,27 @@ export async function readDroppedLuaFile(file: File): Promise<DroppedLuaFile> {
   const raw = await file.text();
   return { ok: true, name: file.name, text: raw.replace(/^\uFEFF/, '') };
 }
+
+const REJECTION_LABEL: Record<LuaDropRejection, string> = {
+  'not-lua': 'not a .lua file',
+  'too-large': 'over 512 KB',
+};
+
+/**
+ * One aggregated line summarising a drop, or null when there is nothing worth saying \u2014 a clean
+ * drop of a single file, since the editor visibly changing is feedback enough. A multi-file load
+ * or any rejection produces a message: `2 files loaded \u00B7 1 ignored (not a .lua file)`.
+ */
+export function formatDropMessage(results: DroppedLuaFile[]): string | null {
+  const loaded = results.filter((r) => r.ok).length;
+  const rejected = results.filter((r): r is Extract<DroppedLuaFile, { ok: false }> => !r.ok);
+  if (rejected.length === 0 && loaded <= 1) return null;
+
+  const parts: string[] = [];
+  if (loaded > 0) parts.push(`${loaded} ${loaded === 1 ? 'file' : 'files'} loaded`);
+  for (const reason of ['not-lua', 'too-large'] as const) {
+    const count = rejected.filter((r) => r.reason === reason).length;
+    if (count > 0) parts.push(`${count} ignored (${REJECTION_LABEL[reason]})`);
+  }
+  return parts.join(' \u00B7 ');
+}
